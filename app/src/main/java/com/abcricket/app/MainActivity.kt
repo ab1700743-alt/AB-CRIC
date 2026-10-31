@@ -543,7 +543,8 @@ fun CricketHome() {
                     }
                 }
                 else -> {
-                    item { ABHomeDashboard(team, opponentTeam, runs, wickets, overs, started, careerStats, { selected = "Matches" }, { selected = "Rooms" }, { selected = "Players" }, { selected = "Rankings" }, { selected = "History" }) }
+                    item { ABHomeDashboard(team, opponentTeam, runs, wickets, overs, started, careerStats, { selected = "Matches" }, { selected = "Rooms" }, { selected = "Players" }, { selected = "Rankings" }, { selected = "History" }, { selected = "Rooms" }) }
+                    item { RoomsScreen() }
                 }
             }
             item {
@@ -621,12 +622,16 @@ fun PlayerPicker(label: String, selectedPlayer: String, players: List<Pair<Strin
 }
 
 @Composable
-fun ABHomeDashboard(team:String, opponent:String, runs:Int, wickets:Int, overs:String, started:Boolean, careerStats:List<PlayerCareer>, onMatches:()->Unit, onRooms:()->Unit, onPlayers:()->Unit, onRankings:()->Unit, onHistory:()->Unit) {
+fun ABHomeDashboard(team:String, opponent:String, runs:Int, wickets:Int, overs:String, started:Boolean, careerStats:List<PlayerCareer>, onMatches:()->Unit, onRooms:()->Unit, onPlayers:()->Unit, onRankings:()->Unit, onHistory:()->Unit, onAccount:()->Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement=Arrangement.spacedBy(17.dp)) {
         Row(verticalAlignment=Alignment.CenterVertically) {
             Column { Text("AB CRICKET", color=Color.White, fontSize=28.sp, fontWeight=FontWeight.Black); Text("PLAY • COMPETE • WIN", color=Green, fontSize=10.sp, fontWeight=FontWeight.Bold, letterSpacing=2.sp) }
             Spacer(Modifier.weight(1f))
-            Surface(shape=RoundedCornerShape(50), color=Green.copy(alpha=.15f)) { Icon(Icons.Default.SportsCricket, null, tint=Green, modifier=Modifier.padding(13.dp).size(27.dp)) }
+            TextButton(onClick=onAccount) {
+                Icon(Icons.Default.AccountCircle, contentDescription=null, tint=Green)
+                Spacer(Modifier.width(5.dp))
+                Text("LOGIN / ACCOUNT", color=Green, fontSize=10.sp, fontWeight=FontWeight.Bold)
+            }
         }
         Card(shape=RoundedCornerShape(24.dp), modifier=Modifier.fillMaxWidth()) {
             Box(Modifier.background(Brush.linearGradient(listOf(Color(0xFF075B36),Color(0xFF102B43),Color(0xFF07130E)))).padding(20.dp)) {
