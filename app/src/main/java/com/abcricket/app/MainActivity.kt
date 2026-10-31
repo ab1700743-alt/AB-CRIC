@@ -120,6 +120,16 @@ fun CricketHome() {
     var firstInningsWickets by remember { mutableIntStateOf(0) }
     var firstInningsOvers by remember { mutableStateOf("0.0") }
     var firstInningsTeam by remember { mutableStateOf("") }
+    var firstStrikerName by remember { mutableStateOf("") }
+    var firstStrikerRuns by remember { mutableIntStateOf(0) }
+    var firstStrikerBalls by remember { mutableIntStateOf(0) }
+    var firstNonStrikerName by remember { mutableStateOf("") }
+    var firstNonStrikerRuns by remember { mutableIntStateOf(0) }
+    var firstNonStrikerBalls by remember { mutableIntStateOf(0) }
+    var firstBowlerName by remember { mutableStateOf("") }
+    var firstBowlerRuns by remember { mutableIntStateOf(0) }
+    var firstBowlerWickets by remember { mutableIntStateOf(0) }
+    var firstBowlerBalls by remember { mutableIntStateOf(0) }
     var target by remember { mutableIntStateOf(0) }
     var started by remember { mutableStateOf(false) }
     var team by remember { mutableStateOf("AB Cricket XI") }
@@ -343,7 +353,7 @@ fun CricketHome() {
                             }
                         }
                         item {
-                            OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
+                            OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; firstStrikerName = ""; firstStrikerRuns = 0; firstStrikerBalls = 0; firstNonStrikerName = ""; firstNonStrikerRuns = 0; firstNonStrikerBalls = 0; firstBowlerName = ""; firstBowlerRuns = 0; firstBowlerWickets = 0; firstBowlerBalls = 0; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
                         }
                     }
                     item {
@@ -353,6 +363,16 @@ fun CricketHome() {
                                 firstInningsWickets = wickets
                                 firstInningsOvers = overs
                                 firstInningsTeam = team
+                                firstStrikerName = strikerName
+                                firstStrikerRuns = strikerRuns
+                                firstStrikerBalls = strikerBalls
+                                firstNonStrikerName = nonStrikerName
+                                firstNonStrikerRuns = nonStrikerRuns
+                                firstNonStrikerBalls = nonStrikerBalls
+                                firstBowlerName = bowlerName
+                                firstBowlerRuns = bowlerRuns
+                                firstBowlerWickets = bowlerWickets
+                                firstBowlerBalls = bowlerBalls
                                 target = runs + 1
                                 val oldTeam = team
                                 team = opponentTeam
@@ -380,18 +400,33 @@ fun CricketHome() {
                                     val scoreText = if (innings == 2) "$firstInningsRuns/$firstInningsWickets ($firstInningsOvers) & $runs/$wickets ($overs) • $result" else "$runs/$wickets"
                                     val record = MatchRecord(date, firstInningsTeam.ifBlank { team }, opponentTeam, scoreText, overs, "$tossWinner chose to $tossDecision")
                                     matchHistory.add(0, record)
-                                    val battingFigures = listOf(strikerName to (strikerRuns to strikerBalls), nonStrikerName to (nonStrikerRuns to nonStrikerBalls))
-                                    battingFigures.filter { it.first.isNotBlank() }.forEach { (name, figures) ->
+                                    val battingFigures = mutableListOf<Triple<String, Int, Int>>()
+                                    if (innings == 2) {
+                                        battingFigures.add(Triple(firstStrikerName, firstStrikerRuns, firstStrikerBalls))
+                                        battingFigures.add(Triple(firstNonStrikerName, firstNonStrikerRuns, firstNonStrikerBalls))
+                                    }
+                                    battingFigures.add(Triple(strikerName, strikerRuns, strikerBalls))
+                                    battingFigures.add(Triple(nonStrikerName, nonStrikerRuns, nonStrikerBalls))
+                                    val matchPlayerNames = mutableSetOf<String>()
+                                    battingFigures.filter { it.first.isNotBlank() }.groupBy { it.first.lowercase(Locale.ROOT) }.forEach { (_, entries) ->
+                                        val name = entries.first().first
                                         val index = careerStats.indexOfFirst { it.name.equals(name, true) }
                                         val role = players.firstOrNull { it.first.equals(name, true) }?.second ?: "Player"
                                         val previous = if (index >= 0) careerStats.removeAt(index) else PlayerCareer(name, role)
-                                        careerStats.add(PlayerCareer(name, role, previous.matches + 1, previous.runs + figures.first, previous.balls + figures.second, previous.wickets, previous.bowlingRuns, previous.bowlingBalls))
+                                        careerStats.add(PlayerCareer(name, role, previous.matches + 1, previous.runs + entries.sumOf { it.second }, previous.balls + entries.sumOf { it.third }, previous.wickets, previous.bowlingRuns, previous.bowlingBalls))
+                                        matchPlayerNames.add(name.lowercase(Locale.ROOT))
                                     }
-                                    if (bowlerName.isNotBlank()) {
-                                        val index = careerStats.indexOfFirst { it.name.equals(bowlerName, true) }
-                                        val role = players.firstOrNull { it.first.equals(bowlerName, true) }?.second ?: "Bowler"
-                                        val previous = if (index >= 0) careerStats.removeAt(index) else PlayerCareer(bowlerName, role)
-                                        careerStats.add(PlayerCareer(bowlerName, role, previous.matches, previous.runs, previous.balls, previous.wickets + bowlerWickets, previous.bowlingRuns + bowlerRuns, previous.bowlingBalls + bowlerBalls))
+                                    val bowlingFigures = mutableListOf<Triple<String, Int, Pair<Int, Int>>>()
+                                    if (innings == 2) bowlingFigures.add(Triple(firstBowlerName, firstBowlerRuns, firstBowlerWickets to firstBowlerBalls))
+                                    bowlingFigures.add(Triple(bowlerName, bowlerRuns, bowlerWickets to bowlerBalls))
+                                    bowlingFigures.filter { it.first.isNotBlank() }.groupBy { it.first.lowercase(Locale.ROOT) }.forEach { (_, entries) ->
+                                        val name = entries.first().first
+                                        val index = careerStats.indexOfFirst { it.name.equals(name, true) }
+                                        val role = players.firstOrNull { it.first.equals(name, true) }?.second ?: "Bowler"
+                                        val previous = if (index >= 0) careerStats.removeAt(index) else PlayerCareer(name, role)
+                                        val bowlingWicketsAdded = entries.sumOf { it.third.first }
+                                        val bowlingBallsAdded = entries.sumOf { it.third.second }
+                                        careerStats.add(PlayerCareer(name, role, previous.matches + if (matchPlayerNames.add(name.lowercase(Locale.ROOT))) 1 else 0, previous.runs, previous.balls, previous.wickets + bowlingWicketsAdded, previous.bowlingRuns + entries.sumOf { it.second }, previous.bowlingBalls + bowlingBallsAdded))
                                     }
                                     val json = JSONArray()
                                     matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss)) }
@@ -403,7 +438,7 @@ fun CricketHome() {
                                 Text(if (matchSaved) "MATCH SAVED" else "SAVE MATCH TO HISTORY", color = Dark, fontWeight = FontWeight.Bold)
                             }
                         }
-                        OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false; matchSaved = false }, modifier = Modifier.fillMaxWidth()) { Text("NEW MATCH / RESET") }
+                        OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; firstStrikerName = ""; firstStrikerRuns = 0; firstStrikerBalls = 0; firstNonStrikerName = ""; firstNonStrikerRuns = 0; firstNonStrikerBalls = 0; firstBowlerName = ""; firstBowlerRuns = 0; firstBowlerWickets = 0; firstBowlerBalls = 0; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false; matchSaved = false }, modifier = Modifier.fillMaxWidth()) { Text("NEW MATCH / RESET") }
                     }
                     item { Text("Saved scorecards are stored on this device. Detailed player-by-player statistics and cloud sync are future upgrades.", color = Color.LightGray, fontSize = 12.sp) }
                 }
