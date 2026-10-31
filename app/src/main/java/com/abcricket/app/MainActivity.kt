@@ -221,13 +221,14 @@ fun CricketHome() {
         containerColor = Dark,
         bottomBar = {
             NavigationBar(containerColor = Panel) {
-                listOf("Home", "Matches", "Players", "Rankings", "History").forEach { item ->
+                listOf("Home", "Matches", "Players", "Rooms", "Rankings", "History").forEach { item ->
                     NavigationBarItem(
                         selected = selected == item,
                         onClick = { selected = item },
                         icon = { Icon(when(item) {
                             "Matches" -> Icons.Default.SportsCricket
                             "Players" -> Icons.Default.People
+                            "Rooms" -> Icons.Default.Groups
                             "Rankings" -> Icons.Default.EmojiEvents
                             "History" -> Icons.Default.History
                             else -> Icons.Default.Home
@@ -256,6 +257,7 @@ fun CricketHome() {
                 }
             }
             when (selected) {
+                "Rooms" -> { item { RoomsScreen() } }
                 "Matches" -> {
                     item {
                         Text("MATCH SETUP", color = Green, fontWeight = FontWeight.Bold)
