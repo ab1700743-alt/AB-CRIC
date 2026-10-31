@@ -107,6 +107,13 @@ fun CricketHome() {
     var balls by remember { mutableIntStateOf(0) }
     var started by remember { mutableStateOf(false) }
     var team by remember { mutableStateOf("AB Cricket XI") }
+    var opponentTeam by remember { mutableStateOf("Opposition XI") }
+    var oversLimit by remember { mutableStateOf("20") }
+    var tossWinner by remember { mutableStateOf("AB Cricket XI") }
+    var tossDecision by remember { mutableStateOf("Bat") }
+    var strikerName by remember { mutableStateOf("") }
+    var nonStrikerName by remember { mutableStateOf("") }
+    var bowlerName by remember { mutableStateOf("") }
     var playerName by remember { mutableStateOf("") }
     var playerRole by remember { mutableStateOf("Batsman") }
     val players = remember { mutableStateListOf<Pair<String, String>>() }
@@ -152,12 +159,38 @@ fun CricketHome() {
             when (selected) {
                 "Matches" -> {
                     item {
-                        Text("LIVE SCORING", color = Green, fontWeight = FontWeight.Bold)
-                        OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Batting team") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        Text("MATCH SETUP", color = Green, fontWeight = FontWeight.Bold)
+                        OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Team 1 / batting team") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(value = opponentTeam, onValueChange = { opponentTeam = it }, label = { Text("Team 2 / opponent") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(value = oversLimit, onValueChange = { value -> if (value.length <= 3 && value.all { it.isDigit() }) oversLimit = value }, label = { Text("Overs per innings") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        Spacer(Modifier.height(12.dp))
+                        Text("TOSS WINNER", color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(team.ifBlank { "Team 1" }, opponentTeam.ifBlank { "Team 2" }).forEach { name ->
+                                FilterChip(selected = tossWinner == name, onClick = { tossWinner = name }, enabled = !started, label = { Text(name, maxLines = 1) })
+                            }
+                        }
+                        Text("TOSS DECISION", color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            listOf("Bat", "Bowl").forEach { decision ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    RadioButton(selected = tossDecision == decision, onClick = { tossDecision = decision }, enabled = !started, colors = RadioButtonDefaults.colors(selectedColor = Green))
+                                    Text(decision, color = Color.White)
+                                }
+                            }
+                        }
+                        HorizontalDivider(color = Color.DarkGray)
+                        Text("PLAYING XI DETAILS", color = Green, fontWeight = FontWeight.Bold)
+                        OutlinedTextField(value = strikerName, onValueChange = { strikerName = it }, label = { Text("Striker") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        OutlinedTextField(value = nonStrikerName, onValueChange = { nonStrikerName = it }, label = { Text("Non-striker") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        OutlinedTextField(value = bowlerName, onValueChange = { bowlerName = it }, label = { Text("Opening bowler") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        Text("Toss: " + tossWinner + " elected to " + tossDecision + " | " + (oversLimit.ifBlank { "20" }) + " overs", color = Color.LightGray, fontSize = 12.sp)
                     }
                     item { ScoreCard(team, runs, wickets, overs, started) }
                     item {
-                        Button(onClick = { started = !started }, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Green)) {
+                        Button(onClick = { started = !started }, enabled = started || (team.isNotBlank() && opponentTeam.isNotBlank() && (oversLimit.toIntOrNull() ?: 0) > 0), modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Green)) {
                             Text(if (started) "PAUSE INNINGS" else "START INNINGS", color = Dark, fontWeight = FontWeight.Bold)
                         }
                     }
@@ -166,21 +199,21 @@ fun CricketHome() {
                             Text("ADD RUNS", color = Color.White, fontWeight = FontWeight.Bold)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf(0, 1, 2, 3, 4, 6).forEach { value ->
-                                    Button(onClick = { runs += value; balls++ }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 12.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("$value", color = Green, fontWeight = FontWeight.Bold) }
+                                    Button(onClick = { if (balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10) { runs += value; balls++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 12.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("$value", color = Green, fontWeight = FontWeight.Bold) }
                                 }
                             }
                         }
                         item {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Button(onClick = { if (wickets < 10) wickets++; balls++ }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E3030))) { Text("WICKET") }
-                                Button(onClick = { balls++ }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("DOT BALL", color = Color.White) }
+                                Button(onClick = { if (wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6) { wickets++; balls++ } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E3030))) { Text("WICKET") }
+                                Button(onClick = { if (balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10) balls++ }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("DOT BALL", color = Color.White) }
                             }
                         }
                         item {
                             OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
                         }
                     }
-                    item { Text("Note: This first scoring demo keeps score only while the app is open. Match saving and cloud sync are coming next.", color = Color.LightGray, fontSize = 12.sp) }
+                    item { Text("Innings ends at the selected over limit or 10 wickets. Match saving and cloud sync will be added in a later stage.", color = Color.LightGray, fontSize = 12.sp) }
                 }
                 "Players" -> {
                     item { InfoCard("PLAYER MANAGEMENT", "Add squad members and assign each player a role.") }
