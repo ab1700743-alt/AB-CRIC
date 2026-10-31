@@ -108,8 +108,15 @@ alter table public.circle_invites enable row level security;
 
 -- Users can view/update only their own profile.
 drop policy if exists "profiles_select_self" on public.profiles;
-create policy "profiles_select_self" on public.profiles
-for select to authenticated using (id = (select auth.uid()));
+drop policy if exists "profiles_select_self_or_roommates" on public.profiles;
+create policy "profiles_select_self_or_roommates" on public.profiles
+for select to authenticated using (
+  id = (select auth.uid()) or exists (
+    select 1 from public.circle_members m
+    where m.user_id = profiles.id
+      and public.is_circle_member(m.circle_id, (select auth.uid()))
+  )
+);
 drop policy if exists "profiles_update_self" on public.profiles;
 create policy "profiles_update_self" on public.profiles
 for update to authenticated using (id = (select auth.uid())) with check (id = (select auth.uid()));
