@@ -1,6 +1,9 @@
 package com.abcricket.app
 
 import android.os.Bundle
+import androidx.compose.ui.platform.LocalContext
+import org.json.JSONArray
+import org.json.JSONObject
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
@@ -117,6 +120,38 @@ fun CricketHome() {
     var playerName by remember { mutableStateOf("") }
     var playerRole by remember { mutableStateOf("Batsman") }
     val players = remember { mutableStateListOf<Pair<String, String>>() }
+    val context = LocalContext.current
+    val preferences = remember { context.getSharedPreferences("ab_cricket_data", android.content.Context.MODE_PRIVATE) }
+    LaunchedEffect(Unit) {
+        team = preferences.getString("team", team) ?: team
+        opponentTeam = preferences.getString("opponentTeam", opponentTeam) ?: opponentTeam
+        oversLimit = preferences.getString("oversLimit", oversLimit) ?: oversLimit
+        tossWinner = preferences.getString("tossWinner", tossWinner) ?: tossWinner
+        tossDecision = preferences.getString("tossDecision", tossDecision) ?: tossDecision
+        strikerName = preferences.getString("strikerName", "") ?: ""
+        nonStrikerName = preferences.getString("nonStrikerName", "") ?: ""
+        bowlerName = preferences.getString("bowlerName", "") ?: ""
+        runs = preferences.getInt("runs", 0)
+        wickets = preferences.getInt("wickets", 0)
+        balls = preferences.getInt("balls", 0)
+        val savedPlayers = JSONArray(preferences.getString("players", "[]"))
+        for (i in 0 until savedPlayers.length()) {
+            val item = savedPlayers.getJSONObject(i)
+            players.add(item.optString("name") to item.optString("role"))
+        }
+    }
+    LaunchedEffect(players.size) {
+        val savedPlayers = JSONArray()
+        players.forEach { (name, role) -> savedPlayers.put(JSONObject().put("name", name).put("role", role)) }
+        preferences.edit().putString("players", savedPlayers.toString()).apply()
+    }
+    LaunchedEffect(team, opponentTeam, oversLimit, tossWinner, tossDecision, strikerName, nonStrikerName, bowlerName, runs, wickets, balls) {
+        preferences.edit().putString("team", team).putString("opponentTeam", opponentTeam)
+            .putString("oversLimit", oversLimit).putString("tossWinner", tossWinner)
+            .putString("tossDecision", tossDecision).putString("strikerName", strikerName)
+            .putString("nonStrikerName", nonStrikerName).putString("bowlerName", bowlerName)
+            .putInt("runs", runs).putInt("wickets", wickets).putInt("balls", balls).apply()
+    }
     val overs = "${balls / 6}.${balls % 6}"
 
     Scaffold(
@@ -183,9 +218,9 @@ fun CricketHome() {
                         }
                         HorizontalDivider(color = Color.DarkGray)
                         Text("PLAYING XI DETAILS", color = Green, fontWeight = FontWeight.Bold)
-                        OutlinedTextField(value = strikerName, onValueChange = { strikerName = it }, label = { Text("Striker") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
-                        OutlinedTextField(value = nonStrikerName, onValueChange = { nonStrikerName = it }, label = { Text("Non-striker") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
-                        OutlinedTextField(value = bowlerName, onValueChange = { bowlerName = it }, label = { Text("Opening bowler") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        PlayerPicker("Striker", strikerName, players, !started) { strikerName = it }
+                        PlayerPicker("Non-striker", nonStrikerName, players, !started) { nonStrikerName = it }
+                        PlayerPicker("Opening bowler", bowlerName, players, !started) { bowlerName = it }
                         Text("Toss: " + tossWinner + " elected to " + tossDecision + " | " + (oversLimit.ifBlank { "20" }) + " overs", color = Color.LightGray, fontSize = 12.sp)
                     }
                     item { ScoreCard(team, runs, wickets, overs, started) }
@@ -345,6 +380,21 @@ fun QuickTile(title: String, icon: androidx.compose.ui.graphics.vector.ImageVect
             Icon(icon, contentDescription = title, tint = Green)
             Spacer(Modifier.height(7.dp))
             Text(title, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+fun PlayerPicker(label: String, selectedPlayer: String, players: List<Pair<String, String>>, enabled: Boolean, onSelected: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        OutlinedButton(onClick = { expanded = true }, enabled = enabled && players.isNotEmpty(), modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)) {
+            Text(label + ": " + selectedPlayer.ifBlank { if (players.isEmpty()) "Add players first" else "Select player" })
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            players.forEach { (name, role) ->
+                DropdownMenuItem(text = { Text(name + " • " + role) }, onClick = { onSelected(name); expanded = false })
+            }
         }
     }
 }
