@@ -107,6 +107,9 @@ fun CricketHome() {
     var balls by remember { mutableIntStateOf(0) }
     var started by remember { mutableStateOf(false) }
     var team by remember { mutableStateOf("AB Cricket XI") }
+    var playerName by remember { mutableStateOf("") }
+    var playerRole by remember { mutableStateOf("Batsman") }
+    val players = remember { mutableStateListOf<Pair<String, String>>() }
     val overs = "${balls / 6}.${balls % 6}"
 
     Scaffold(
@@ -180,8 +183,57 @@ fun CricketHome() {
                     item { Text("Note: This first scoring demo keeps score only while the app is open. Match saving and cloud sync are coming next.", color = Color.LightGray, fontSize = 12.sp) }
                 }
                 "Players" -> {
-                    item { InfoCard("PLAYER PROFILES", "Player names, roles, batting and bowling career records will be managed here.") }
-                    item { InfoCard("SQUAD", "No players added yet.") }
+                    item { InfoCard("PLAYER MANAGEMENT", "Add squad members and assign each player a role.") }
+                    item {
+                        OutlinedTextField(value = playerName, onValueChange = { playerName = it }, label = { Text("Player name") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        Spacer(Modifier.height(10.dp))
+                        Text("PLAYER ROLE", color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            listOf("Batsman", "Bowler", "All-rounder", "Wicketkeeper").forEach { role ->
+                                FilterChip(selected = playerRole == role, onClick = { playerRole = role }, label = { Text(role, fontSize = 10.sp) })
+                            }
+                        }
+                        Button(
+                            onClick = {
+                                val name = playerName.trim()
+                                if (name.isNotEmpty() && players.none { it.first.equals(name, ignoreCase = true) }) {
+                                    players.add(name to playerRole)
+                                    playerName = ""
+                                }
+                            },
+                            enabled = playerName.isNotBlank(),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Green)
+                        ) { Text("ADD PLAYER", color = Dark, fontWeight = FontWeight.Bold) }
+                    }
+                    item {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("SQUAD MEMBERS", color = Color.White, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.weight(1f))
+                            Text("${players.size} PLAYERS", color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    if (players.isEmpty()) {
+                        item { InfoCard("EMPTY SQUAD", "Add your first player above.") }
+                    } else {
+                        items(players.size) { index ->
+                            val player = players[index]
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
+                                Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Person, contentDescription = null, tint = Green)
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(player.first, color = Color.White, fontWeight = FontWeight.Bold)
+                                        Text(player.second, color = Color.LightGray, fontSize = 12.sp)
+                                    }
+                                    IconButton(onClick = { players.removeAt(index) }) {
+                                        Icon(Icons.Default.DeleteOutline, contentDescription = "Remove player", tint = Color(0xFFE57373))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    item { Text("Squad entries are temporary for now. Permanent saving and cloud sync will be added in the database stage.", color = Color.LightGray, fontSize = 11.sp) }
                 }
                 "Rankings" -> {
                     item { InfoCard("TOP BATSMEN", "Rankings will appear after match statistics are saved.") }
