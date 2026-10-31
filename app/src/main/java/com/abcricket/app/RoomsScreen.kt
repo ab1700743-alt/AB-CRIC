@@ -25,6 +25,8 @@ private val RoomPanel = Color(0xFF14221B)
 private const val SUPABASE_URL = "https://wcpzmaqwxvvowkdgapsj.supabase.co"
 private const val SUPABASE_PUBLISHABLE_KEY = "sb_publishable_epu8W3eriwDPTVm7TLvoOg_87fuLBQx"
 
+private data class RoomPlayer(val id: String, val name: String, val role: String)
+
 private data class CricketRoom(
     val id: String,
     val name: String,
@@ -92,6 +94,22 @@ private object SupabaseRoomsApi {
         }
     }
 
+    suspend fun roomPlayers(token: String, circleId: String): List<RoomPlayer> = withContext(Dispatchers.IO) {
+        val encoded = java.net.URLEncoder.encode(circleId, "UTF-8")
+        val json = JSONArray(request("/rest/v1/room_players?select=id,name,role&circle_id=eq.$encoded&is_active=eq.true&order=name.asc", "GET", token))
+        buildList {
+            for (i in 0 until json.length()) {
+                val row = json.getJSONObject(i)
+                add(RoomPlayer(row.optString("id"), row.optString("name"), row.optString("role")))
+            }
+        }
+    }
+
+    suspend fun addRoomPlayer(token: String, circleId: String, name: String, role: String) = withContext(Dispatchers.IO) {
+        val body = JSONObject().put("circle_id", circleId).put("name", name).put("role", role)
+        request("/rest/v1/room_players", "POST", token, body, "return=minimal")
+    }
+
     suspend fun createRoom(token: String, userId: String, name: String): String = withContext(Dispatchers.IO) {
         val body = JSONObject().put("p_name", name)
         request("/rest/v1/rpc/create_cricket_circle", "POST", token, body).trim().trim('"')
@@ -115,6 +133,10 @@ fun RoomsScreen() {
     var accessToken by remember { mutableStateOf(prefs.getString("access_token", "") ?: "") }
     var userId by remember { mutableStateOf(prefs.getString("user_id", "") ?: "") }
     var rooms by remember { mutableStateOf(emptyList<CricketRoom>()) }
+    var selectedRoom by remember { mutableStateOf<CricketRoom?>(null) }
+    var roomPlayers by remember { mutableStateOf(emptyList<RoomPlayer>()) }
+    var newPlayerName by remember { mutableStateOf("") }
+    var newPlayerRole by remember { mutableStateOf("Batsman") }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
     var isSignUp by remember { mutableStateOf(false) }
@@ -126,6 +148,17 @@ fun RoomsScreen() {
         if (accessToken.isNotBlank() && userId.isNotBlank()) {
             prefs.edit().putString("access_token", accessToken).putString("user_id", userId)
                 .putString("email", email).apply()
+        }
+    }
+
+    fun loadRoomPlayers(room: CricketRoom) {
+        scope.launch {
+            busy = true
+            try {
+                roomPlayers = SupabaseRoomsApi.roomPlayers(accessToken, room.id)
+                message = ""
+            } catch (e: Exception) { message = e.message ?: "Players load nahi ho sake." }
+            busy = false
         }
     }
 
@@ -220,7 +253,7 @@ fun RoomsScreen() {
             }
             if (rooms.isEmpty()) Text("No rooms yet.", color = Color.LightGray, fontSize = 12.sp)
             rooms.forEach { room ->
-                Card(colors = CardDefaults.cardColors(containerColor = RoomPanel), modifier = Modifier.fillMaxWidth()) {
+                Card(onClick = { selectedRoom = room; roomPlayers = emptyList(); loadRoomPlayers(room) }, colors = CardDefaults.cardColors(containerColor = RoomPanel), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(room.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         if (room.description.isNotBlank()) Text(room.description, color = Color.LightGray, fontSize = 12.sp)
@@ -231,6 +264,57 @@ fun RoomsScreen() {
                         Text(if (room.role == "owner" || room.role == "admin") "Room management access" else "Read-only member access", color = Color.LightGray, fontSize = 11.sp)
                     }
                 }
+            }
+            if (selectedRoom != null) {
+                val room = selectedRoom!!
+                HorizontalDivider(color = Color.DarkGray)
+                Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    TextButton(onClick = { selectedRoom = null; roomPlayers = emptyList(); message = "" }) {
+                        Text("← BACK TO ROOMS", color = RoomGreen)
+                    }
+                }
+                Text(room.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text("ROOM SQUAD", color = RoomGreen, fontWeight = FontWeight.Bold)
+                if (room.role == "owner" || room.role == "admin") {
+                    OutlinedTextField(value = newPlayerName, onValueChange = { newPlayerName = it }, label = { Text("Player name") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                    Text("PLAYER ROLE", color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        listOf("Batsman", "Bowler", "All-rounder", "Wicketkeeper").forEach { role ->
+                            FilterChip(selected = newPlayerRole == role, onClick = { newPlayerRole = role }, label = { Text(role, fontSize = 10.sp) })
+                        }
+                    }
+                    Button(onClick = {
+                        scope.launch {
+                            busy = true
+                            try {
+                                SupabaseRoomsApi.addRoomPlayer(accessToken, room.id, newPlayerName.trim(), newPlayerRole)
+                                newPlayerName = ""
+                                roomPlayers = SupabaseRoomsApi.roomPlayers(accessToken, room.id)
+                                message = "Player add ho gaya."
+                            } catch (e: Exception) { message = e.message ?: "Player add nahi hua." }
+                            busy = false
+                        }
+                    }, enabled = !busy && newPlayerName.trim().isNotEmpty(), modifier = Modifier.fillMaxWidth()) {
+                        Text("ADD PLAYER")
+                    }
+                } else {
+                    Text("Read-only access: squad dekh sakte ho, players add nahi kar sakte.", color = Color.LightGray, fontSize = 12.sp)
+                }
+                Text("${roomPlayers.size} PLAYERS", color = RoomGreen, fontWeight = FontWeight.Bold)
+                if (roomPlayers.isEmpty()) Text("Abhi squad empty hai. Pehla player add karo.", color = Color.LightGray, fontSize = 12.sp)
+                roomPlayers.forEachIndexed { index, player ->
+                    Card(colors = CardDefaults.cardColors(containerColor = RoomPanel), modifier = Modifier.fillMaxWidth()) {
+                        Row(Modifier.fillMaxWidth().padding(13.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Text("${index + 1}.", color = RoomGreen, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(10.dp))
+                            Column {
+                                Text(player.name, color = Color.White, fontWeight = FontWeight.Bold)
+                                Text(player.role, color = Color.LightGray, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+                TextButton(onClick = { loadRoomPlayers(room) }) { Text("REFRESH SQUAD", color = RoomGreen) }
             }
         }
         if (message.isNotBlank()) Text(message, color = if (message.contains("nahi") || message.contains("failed", true) || message.contains("Invalid", true)) Color(0xFFFF8A80) else RoomGreen, fontSize = 12.sp)
