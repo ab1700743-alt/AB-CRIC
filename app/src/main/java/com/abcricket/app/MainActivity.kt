@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -244,16 +245,18 @@ fun CricketHome() {
             modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 18.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            item {
-                Spacer(Modifier.height(18.dp))
-                Text("AB CRICKET", color = Green, fontSize = 27.sp, fontWeight = FontWeight.Black)
-                Text("Every run tells a story", color = Color.LightGray, fontSize = 13.sp)
-            }
-            item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(selected, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.weight(1f))
-                    Text("SEASON 2026", color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            if (selected != "Home") {
+                item {
+                    Spacer(Modifier.height(18.dp))
+                    Text("AB CRICKET", color = Green, fontSize = 27.sp, fontWeight = FontWeight.Black)
+                    Text("Every run tells a story", color = Color.LightGray, fontSize = 13.sp)
+                }
+                item {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(selected, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                        Spacer(Modifier.weight(1f))
+                        Text("SEASON 2026", color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
             when (selected) {
@@ -540,22 +543,7 @@ fun CricketHome() {
                     }
                 }
                 else -> {
-                    item { ScoreCard(team, runs, wickets, overs, started) }
-                    item {
-                        Text("QUICK ACCESS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            QuickTile("New Match", Icons.Default.Add, Modifier.weight(1f)) { selected = "Matches" }
-                            QuickTile("Players", Icons.Default.People, Modifier.weight(1f)) { selected = "Players" }
-                            QuickTile("Rankings", Icons.Default.EmojiEvents, Modifier.weight(1f)) { selected = "Rankings" }
-                        }
-                    }
-                    item {
-                        Text("APP MODULES", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        InfoCard("Live scorecards", "Ball-by-ball scoring and match summaries")
-                        InfoCard("Player statistics", "Batting, bowling and career records")
-                        InfoCard("Tournaments", "Fixtures, points tables and leaderboards")
-                        InfoCard("Match history", "Open History to view saved scorecards")
-                    }
+                    item { ABHomeDashboard(team, opponentTeam, runs, wickets, overs, started, careerStats, { selected = "Matches" }, { selected = "Rooms" }, { selected = "Players" }, { selected = "Rankings" }, { selected = "History" }) }
                 }
             }
             item {
@@ -629,5 +617,70 @@ fun PlayerPicker(label: String, selectedPlayer: String, players: List<Pair<Strin
                 DropdownMenuItem(text = { Text(name + " • " + role) }, onClick = { onSelected(name); expanded = false })
             }
         }
+    }
+}
+
+@Composable
+fun ABHomeDashboard(team:String, opponent:String, runs:Int, wickets:Int, overs:String, started:Boolean, careerStats:List<PlayerCareer>, onMatches:()->Unit, onRooms:()->Unit, onPlayers:()->Unit, onRankings:()->Unit, onHistory:()->Unit) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement=Arrangement.spacedBy(17.dp)) {
+        Row(verticalAlignment=Alignment.CenterVertically) {
+            Column { Text("AB CRICKET", color=Color.White, fontSize=28.sp, fontWeight=FontWeight.Black); Text("PLAY • COMPETE • WIN", color=Green, fontSize=10.sp, fontWeight=FontWeight.Bold, letterSpacing=2.sp) }
+            Spacer(Modifier.weight(1f))
+            Surface(shape=RoundedCornerShape(50), color=Green.copy(alpha=.15f)) { Icon(Icons.Default.SportsCricket, null, tint=Green, modifier=Modifier.padding(13.dp).size(27.dp)) }
+        }
+        Card(shape=RoundedCornerShape(24.dp), modifier=Modifier.fillMaxWidth()) {
+            Box(Modifier.background(Brush.linearGradient(listOf(Color(0xFF075B36),Color(0xFF102B43),Color(0xFF07130E)))).padding(20.dp)) {
+                Column(verticalArrangement=Arrangement.spacedBy(9.dp)) {
+                    Text("YOUR CRICKET UNIVERSE", color=Color(0xFF8DFFB5), fontSize=10.sp, fontWeight=FontWeight.Bold, letterSpacing=2.sp)
+                    Text("Every run tells\na story.", color=Color.White, fontSize=31.sp, fontWeight=FontWeight.Black, lineHeight=35.sp)
+                    Text("Manage your squad. Own the match. Climb the rankings.", color=Color.White.copy(alpha=.85f), fontSize=12.sp)
+                    Button(onClick=onMatches, colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF55E879)), shape=RoundedCornerShape(50)) { Text("LET'S PLAY  →", color=Dark, fontWeight=FontWeight.Black) }
+                    Text("🏏", fontSize=48.sp, modifier=Modifier.align(Alignment.End))
+                }
+            }
+        }
+        Text("QUICK ACCESS", color=Color.White, fontWeight=FontWeight.Bold, fontSize=16.sp)
+        Row(horizontalArrangement=Arrangement.spacedBy(9.dp)) {
+            QuickTile("My Rooms",Icons.Default.Groups,Modifier.weight(1f)){onRooms()}
+            QuickTile("New Match",Icons.Default.Add,Modifier.weight(1f)){onMatches()}
+        }
+        Row(horizontalArrangement=Arrangement.spacedBy(9.dp)) {
+            QuickTile("Players",Icons.Default.People,Modifier.weight(1f)){onPlayers()}
+            QuickTile("Rankings",Icons.Default.EmojiEvents,Modifier.weight(1f)){onRankings()}
+        }
+        Card(colors=CardDefaults.cardColors(containerColor=Panel), shape=RoundedCornerShape(22.dp), modifier=Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(17.dp), verticalArrangement=Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment=Alignment.CenterVertically) {
+                    Text("🔥  MATCH CENTRE", color=Color.White, fontWeight=FontWeight.Bold, fontSize=16.sp)
+                    Spacer(Modifier.weight(1f)); Text(if(started) "● LIVE" else "READY", color=Green, fontWeight=FontWeight.Bold, fontSize=10.sp)
+                }
+                Row(verticalAlignment=Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), horizontalAlignment=Alignment.CenterHorizontally) { Text("🏏",fontSize=25.sp); Text(team,color=Color.White,fontWeight=FontWeight.Bold,maxLines=1,fontSize=12.sp) }
+                    Text("VS",color=Green,fontWeight=FontWeight.Black,fontSize=20.sp)
+                    Column(Modifier.weight(1f), horizontalAlignment=Alignment.CenterHorizontally) { Text("🏆",fontSize=25.sp); Text(opponent,color=Color.White,fontWeight=FontWeight.Bold,maxLines=1,fontSize=12.sp) }
+                }
+                HorizontalDivider(color=Color.DarkGray)
+                Text("$runs/$wickets",color=Color.White,fontSize=35.sp,fontWeight=FontWeight.Black)
+                Text("Overs: $overs",color=Color.LightGray,fontSize=12.sp)
+                OutlinedButton(onClick=onMatches,modifier=Modifier.fillMaxWidth(),shape=RoundedCornerShape(50)){Text(if(started)"OPEN LIVE MATCH" else "CREATE A MATCH",color=Green,fontWeight=FontWeight.Bold)}
+            }
+        }
+        Row(verticalAlignment=Alignment.CenterVertically) {
+            Text("⭐  TOP RANKINGS",color=Color.White,fontWeight=FontWeight.Bold,fontSize=16.sp)
+            Spacer(Modifier.weight(1f)); TextButton(onClick=onRankings){Text("VIEW ALL",color=Green)}
+        }
+        val top=careerStats.sortedByDescending{it.runs}.take(3)
+        if(top.isEmpty()) InfoCard("YOUR LEADERBOARD STARTS HERE","Save your first match to see top run scorers and bowling leaders.")
+        else top.forEachIndexed{ i,p ->
+            Card(colors=CardDefaults.cardColors(containerColor=Panel),shape=RoundedCornerShape(16.dp),modifier=Modifier.fillMaxWidth()){
+                Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically){
+                    Text("#${i+1}",color=Green,fontSize=22.sp,fontWeight=FontWeight.Black); Spacer(Modifier.width(14.dp))
+                    Column(Modifier.weight(1f)){Text(p.name,color=Color.White,fontWeight=FontWeight.Bold);Text("${p.role} • ${p.runs} runs • ${p.wickets} wickets",color=Color.LightGray,fontSize=11.sp)}
+                    Icon(Icons.Default.EmojiEvents,null,tint=Color(0xFFFFC857))
+                }
+            }
+        }
+        OutlinedButton(onClick=onHistory,modifier=Modifier.fillMaxWidth()){Icon(Icons.Default.History,null,tint=Green);Spacer(Modifier.width(8.dp));Text("VIEW MATCH HISTORY",color=Green)}
+        Text("ESTABLISHED BY • SYED ABDUL BASIT",color=Color.Gray,fontSize=10.sp,letterSpacing=1.sp,modifier=Modifier.align(Alignment.CenterHorizontally))
     }
 }
