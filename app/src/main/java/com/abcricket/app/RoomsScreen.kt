@@ -19,6 +19,9 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
+private val RoomGreen = Color(0xFF19B56B)
+private val RoomPanel = Color(0xFF14221B)
+
 private const val SUPABASE_URL = "https://wcpzmaqwxvvowkdgapsj.supabase.co"
 private const val SUPABASE_PUBLISHABLE_KEY = "sb_publishable_epu8W3eriwDPTVm7TLvoOg_87fuLBQx"
 
@@ -143,7 +146,7 @@ fun RoomsScreen() {
     LaunchedEffect(accessToken, userId) { if (accessToken.isNotBlank() && userId.isNotBlank()) loadRooms() }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        Text("PRIVATE CRICKET ROOMS", color = Green, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+        Text("PRIVATE CRICKET ROOMS", color = RoomGreen, fontWeight = FontWeight.Bold, fontSize = 17.sp)
         Text("Har room ka apna squad, matches aur scorecards honge.", color = Color.LightGray, fontSize = 12.sp)
         if (accessToken.isBlank()) {
             OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
@@ -173,7 +176,7 @@ fun RoomsScreen() {
                 modifier = Modifier.fillMaxWidth()
             ) { Text(if (busy) "PLEASE WAIT..." else if (isSignUp) "CREATE ACCOUNT" else "LOGIN") }
             TextButton(onClick = { isSignUp = !isSignUp; message = "" }) {
-                Text(if (isSignUp) "Already have an account? Login" else "New here? Create account", color = Green)
+                Text(if (isSignUp) "Already have an account? Login" else "New here? Create account", color = RoomGreen)
             }
         } else {
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
@@ -182,10 +185,10 @@ fun RoomsScreen() {
                     prefs.edit().remove("access_token").remove("user_id").apply()
                     accessToken = ""; userId = ""; rooms = emptyList(); password = ""
                     message = "Logout ho gaya."
-                }) { Text("LOG OUT", color = Green) }
+                }) { Text("LOG OUT", color = RoomGreen) }
             }
             HorizontalDivider(color = Color.DarkGray)
-            Text("CREATE A ROOM", color = Green, fontWeight = FontWeight.Bold)
+            Text("CREATE A ROOM", color = RoomGreen, fontWeight = FontWeight.Bold)
             OutlinedTextField(value = roomName, onValueChange = { roomName = it }, label = { Text("Room name") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
             OutlinedTextField(value = roomDescription, onValueChange = { roomDescription = it }, label = { Text("Description (optional)") }, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
             Button(onClick = {
@@ -200,7 +203,7 @@ fun RoomsScreen() {
                 }
             }, enabled = !busy && roomName.trim().length >= 2, modifier = Modifier.fillMaxWidth()) { Text("CREATE ROOM") }
             HorizontalDivider(color = Color.DarkGray)
-            Text("JOIN WITH INVITE CODE", color = Green, fontWeight = FontWeight.Bold)
+            Text("JOIN WITH INVITE CODE", color = RoomGreen, fontWeight = FontWeight.Bold)
             OutlinedTextField(value = inviteCode, onValueChange = { inviteCode = it.uppercase().take(20) }, label = { Text("Invite code") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
             OutlinedButton(onClick = {
                 scope.launch {
@@ -214,17 +217,17 @@ fun RoomsScreen() {
             }, enabled = !busy && inviteCode.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("JOIN ROOM") }
             HorizontalDivider(color = Color.DarkGray)
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text("YOUR ROOMS", color = Green, fontWeight = FontWeight.Bold)
+                Text("YOUR ROOMS", color = RoomGreen, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.weight(1f))
-                TextButton(onClick = { loadRooms() }) { Text("REFRESH", color = Green) }
+                TextButton(onClick = { loadRooms() }) { Text("REFRESH", color = RoomGreen) }
             }
             if (rooms.isEmpty()) Text("No rooms yet.", color = Color.LightGray, fontSize = 12.sp)
             rooms.forEach { room ->
-                Card(colors = CardDefaults.cardColors(containerColor = Panel), modifier = Modifier.fillMaxWidth()) {
+                Card(colors = CardDefaults.cardColors(containerColor = RoomPanel), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(room.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         if (room.description.isNotBlank()) Text(room.description, color = Color.LightGray, fontSize = 12.sp)
-                        Text("ROLE: ${room.role.uppercase()}", color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("ROLE: ${room.role.uppercase()}", color = RoomGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         if (room.role == "owner" || room.role == "admin") {
                             Text("Invite code: ${room.inviteCode}", color = Color.White, fontSize = 13.sp)
                         }
@@ -233,8 +236,8 @@ fun RoomsScreen() {
                 }
             }
         }
-        if (message.isNotBlank()) Text(message, color = if (message.contains("nahi") || message.contains("failed", true) || message.contains("Invalid", true)) Color(0xFFFF8A80) else Green, fontSize = 12.sp)
-        if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = Green)
+        if (message.isNotBlank()) Text(message, color = if (message.contains("nahi") || message.contains("failed", true) || message.contains("Invalid", true)) Color(0xFFFF8A80) else RoomGreen, fontSize = 12.sp)
+        if (busy) LinearProgressIndicator(modifier = Modifier.fillMaxWidth(), color = RoomGreen)
         Text("Security: room access aur editing permissions database RLS se enforce hoti hain.", color = Color.LightGray, fontSize = 11.sp)
     }
 }
