@@ -32,7 +32,7 @@ private val Dark = Color(0xFF08110D)
 private val Panel = Color(0xFF14221B)
 
 private data class MatchRecord(val date: String, val team: String, val opponent: String, val score: String, val overs: String, val toss: String)
-private data class PlayerCareer(val name: String, val role: String, val matches: Int = 0, val runs: Int = 0, val balls: Int = 0, val wickets: Int = 0, val bowlingRuns: Int = 0, val bowlingBalls: Int = 0)
+data class PlayerCareer(val name: String, val role: String, val matches: Int = 0, val runs: Int = 0, val balls: Int = 0, val wickets: Int = 0, val bowlingRuns: Int = 0, val bowlingBalls: Int = 0)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
