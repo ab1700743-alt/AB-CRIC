@@ -122,6 +122,13 @@ fun CricketHome() {
     var strikerName by remember { mutableStateOf("") }
     var nonStrikerName by remember { mutableStateOf("") }
     var bowlerName by remember { mutableStateOf("") }
+    var strikerRuns by remember { mutableIntStateOf(0) }
+    var strikerBalls by remember { mutableIntStateOf(0) }
+    var nonStrikerRuns by remember { mutableIntStateOf(0) }
+    var nonStrikerBalls by remember { mutableIntStateOf(0) }
+    var bowlerRuns by remember { mutableIntStateOf(0) }
+    var bowlerWickets by remember { mutableIntStateOf(0) }
+    var bowlerBalls by remember { mutableIntStateOf(0) }
     var playerName by remember { mutableStateOf("") }
     var playerRole by remember { mutableStateOf("Batsman") }
     var matchSaved by remember { mutableStateOf(false) }
@@ -141,6 +148,13 @@ fun CricketHome() {
         runs = preferences.getInt("runs", 0)
         wickets = preferences.getInt("wickets", 0)
         balls = preferences.getInt("balls", 0)
+        strikerRuns = preferences.getInt("strikerRuns", 0)
+        strikerBalls = preferences.getInt("strikerBalls", 0)
+        nonStrikerRuns = preferences.getInt("nonStrikerRuns", 0)
+        nonStrikerBalls = preferences.getInt("nonStrikerBalls", 0)
+        bowlerRuns = preferences.getInt("bowlerRuns", 0)
+        bowlerWickets = preferences.getInt("bowlerWickets", 0)
+        bowlerBalls = preferences.getInt("bowlerBalls", 0)
         matchSaved = preferences.getBoolean("matchSaved", false)
         val savedHistory = JSONArray(preferences.getString("matchHistory", "[]"))
         for (i in 0 until savedHistory.length()) {
@@ -167,6 +181,11 @@ fun CricketHome() {
     }
     val overs = "${balls / 6}.${balls % 6}"
     LaunchedEffect(matchSaved) { preferences.edit().putBoolean("matchSaved", matchSaved).apply() }
+    LaunchedEffect(strikerRuns, strikerBalls, nonStrikerRuns, nonStrikerBalls, bowlerRuns, bowlerWickets, bowlerBalls) {
+        preferences.edit().putInt("strikerRuns", strikerRuns).putInt("strikerBalls", strikerBalls)
+            .putInt("nonStrikerRuns", nonStrikerRuns).putInt("nonStrikerBalls", nonStrikerBalls)
+            .putInt("bowlerRuns", bowlerRuns).putInt("bowlerWickets", bowlerWickets).putInt("bowlerBalls", bowlerBalls).apply()
+    }
 
     Scaffold(
         containerColor = Dark,
@@ -240,6 +259,16 @@ fun CricketHome() {
                     }
                     item { ScoreCard(team, runs, wickets, overs, started) }
                     item {
+                        Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text("LIVE PLAYER FIGURES", color = Green, fontWeight = FontWeight.Bold)
+                                Text((strikerName.ifBlank { "Striker" }) + " (on strike): $strikerRuns runs off $strikerBalls balls", color = Color.White, fontSize = 13.sp)
+                                Text((nonStrikerName.ifBlank { "Non-striker" }) + ": $nonStrikerRuns runs off $nonStrikerBalls balls", color = Color.White, fontSize = 13.sp)
+                                Text((bowlerName.ifBlank { "Bowler" }) + ": ${bowlerBalls / 6}.${bowlerBalls % 6} overs, $bowlerRuns runs, $bowlerWickets wickets", color = Color.White, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                    item {
                         Button(onClick = { started = !started }, enabled = started || (team.isNotBlank() && opponentTeam.isNotBlank() && (oversLimit.toIntOrNull() ?: 0) > 0), modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Green)) {
                             Text(if (started) "PAUSE INNINGS" else "START INNINGS", color = Dark, fontWeight = FontWeight.Bold)
                         }
@@ -249,18 +278,18 @@ fun CricketHome() {
                             Text("ADD RUNS", color = Color.White, fontWeight = FontWeight.Bold)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 listOf(0, 1, 2, 3, 4, 6).forEach { value ->
-                                    Button(onClick = { if (balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10) { runs += value; balls++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 12.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("$value", color = Green, fontWeight = FontWeight.Bold) }
+                                    Button(onClick = { if (balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10) { runs += value; balls++; bowlerBalls++; bowlerRuns += value; if (strikerName.isNotBlank()) { strikerRuns += value; strikerBalls++ } else { strikerRuns += value; strikerBalls++ }; if (value % 2 == 1) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val r = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = r; val b = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = b }; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val r = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = r; val b = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = b } } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 12.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("$value", color = Green, fontWeight = FontWeight.Bold) }
                                 }
                             }
                         }
                         item {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Button(onClick = { if (wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6) { wickets++; balls++ } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E3030))) { Text("WICKET") }
-                                Button(onClick = { if (balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10) balls++ }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("DOT BALL", color = Color.White) }
+                                Button(onClick = { if (wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6) { wickets++; balls++; bowlerBalls++; bowlerWickets++; strikerBalls++ } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E3030))) { Text("WICKET") }
+                                Button(onClick = { if (balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10) { balls++; bowlerBalls++; strikerBalls++; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val r = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = r; val b = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = b } } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("DOT BALL", color = Color.White) }
                             }
                         }
                         item {
-                            OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
+                            OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
                         }
                     }
                     item {
