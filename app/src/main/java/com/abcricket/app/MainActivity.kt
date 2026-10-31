@@ -31,6 +31,7 @@ private val Dark = Color(0xFF08110D)
 private val Panel = Color(0xFF14221B)
 
 private data class MatchRecord(val date: String, val team: String, val opponent: String, val score: String, val overs: String, val toss: String)
+private data class PlayerCareer(val name: String, val role: String, val matches: Int = 0, val runs: Int = 0, val balls: Int = 0, val wickets: Int = 0, val bowlingRuns: Int = 0, val bowlingBalls: Int = 0)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -142,6 +143,7 @@ fun CricketHome() {
     var matchSaved by remember { mutableStateOf(false) }
     val matchHistory = remember { mutableStateListOf<MatchRecord>() }
     val players = remember { mutableStateListOf<Pair<String, String>>() }
+    val careerStats = remember { mutableStateListOf<PlayerCareer>() }
     val context = LocalContext.current
     val preferences = remember { context.getSharedPreferences("ab_cricket_data", android.content.Context.MODE_PRIVATE) }
     LaunchedEffect(Unit) {
@@ -176,12 +178,15 @@ fun CricketHome() {
             val item = savedHistory.getJSONObject(i)
             matchHistory.add(MatchRecord(item.optString("date"), item.optString("team"), item.optString("opponent"), item.optString("score"), item.optString("overs"), item.optString("toss")))
         }
+        val savedCareer = JSONArray(preferences.getString("careerStats", "[]"))
+        for (i in 0 until savedCareer.length()) { val item = savedCareer.getJSONObject(i); careerStats.add(PlayerCareer(item.optString("name"), item.optString("role"), item.optInt("matches"), item.optInt("runs"), item.optInt("balls"), item.optInt("wickets"), item.optInt("bowlingRuns"), item.optInt("bowlingBalls"))) }
         val savedPlayers = JSONArray(preferences.getString("players", "[]"))
         for (i in 0 until savedPlayers.length()) {
             val item = savedPlayers.getJSONObject(i)
             players.add(item.optString("name") to item.optString("role"))
         }
     }
+    LaunchedEffect(careerStats.size) { val saved = JSONArray(); careerStats.forEach { p -> saved.put(JSONObject().put("name", p.name).put("role", p.role).put("matches", p.matches).put("runs", p.runs).put("balls", p.balls).put("wickets", p.wickets).put("bowlingRuns", p.bowlingRuns).put("bowlingBalls", p.bowlingBalls)) }; preferences.edit().putString("careerStats", saved.toString()).apply() }
     LaunchedEffect(players.size) {
         val savedPlayers = JSONArray()
         players.forEach { (name, role) -> savedPlayers.put(JSONObject().put("name", name).put("role", role)) }
@@ -375,6 +380,19 @@ fun CricketHome() {
                                     val scoreText = if (innings == 2) "$firstInningsRuns/$firstInningsWickets ($firstInningsOvers) & $runs/$wickets ($overs) • $result" else "$runs/$wickets"
                                     val record = MatchRecord(date, firstInningsTeam.ifBlank { team }, opponentTeam, scoreText, overs, "$tossWinner chose to $tossDecision")
                                     matchHistory.add(0, record)
+                                    val battingFigures = listOf(strikerName to (strikerRuns to strikerBalls), nonStrikerName to (nonStrikerRuns to nonStrikerBalls))
+                                    battingFigures.filter { it.first.isNotBlank() }.forEach { (name, figures) ->
+                                        val index = careerStats.indexOfFirst { it.name.equals(name, true) }
+                                        val role = players.firstOrNull { it.first.equals(name, true) }?.second ?: "Player"
+                                        val previous = if (index >= 0) careerStats.removeAt(index) else PlayerCareer(name, role)
+                                        careerStats.add(PlayerCareer(name, role, previous.matches + 1, previous.runs + figures.first, previous.balls + figures.second, previous.wickets, previous.bowlingRuns, previous.bowlingBalls))
+                                    }
+                                    if (bowlerName.isNotBlank()) {
+                                        val index = careerStats.indexOfFirst { it.name.equals(bowlerName, true) }
+                                        val role = players.firstOrNull { it.first.equals(bowlerName, true) }?.second ?: "Bowler"
+                                        val previous = if (index >= 0) careerStats.removeAt(index) else PlayerCareer(bowlerName, role)
+                                        careerStats.add(PlayerCareer(bowlerName, role, previous.matches, previous.runs, previous.balls, previous.wickets + bowlerWickets, previous.bowlingRuns + bowlerRuns, previous.bowlingBalls + bowlerBalls))
+                                    }
                                     val json = JSONArray()
                                     matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss)) }
                                     preferences.edit().putString("matchHistory", json.toString()).apply()
@@ -470,8 +488,19 @@ fun CricketHome() {
                     }
                 }
                 "Rankings" -> {
-                    item { InfoCard("TOP BATSMEN", "Rankings will appear after match statistics are saved.") }
-                    item { InfoCard("TOP BOWLERS", "Wickets, economy and bowling averages will be calculated here.") }
+                    val topBatters = careerStats.sortedByDescending { it.runs }
+                    val topBowlers = careerStats.filter { it.bowlingBalls > 0 || it.wickets > 0 }.sortedWith(compareByDescending<PlayerCareer> { it.wickets }.thenBy { if (it.bowlingBalls == 0) Double.MAX_VALUE else it.bowlingRuns.toDouble() / (it.bowlingBalls / 6.0) })
+                    item { InfoCard("CAREER LEADERBOARD", "Saved match figures • ${careerStats.size} players tracked") }
+                    item {
+                        Text("TOP BATSMEN", color = Green, fontWeight = FontWeight.Bold)
+                        if (topBatters.isEmpty()) InfoCard("NO BATTING RECORDS", "Save a match with selected batters to start the rankings.")
+                        topBatters.forEachIndexed { index, p -> InfoCard("#${index + 1} ${p.name}", "${p.runs} runs • ${p.balls} balls • SR ${if (p.balls == 0) "0.0" else String.format(Locale.getDefault(), "%.1f", p.runs * 100.0 / p.balls)}") }
+                    }
+                    item {
+                        Text("TOP BOWLERS", color = Green, fontWeight = FontWeight.Bold)
+                        if (topBowlers.isEmpty()) InfoCard("NO BOWLING RECORDS", "Bowling figures will appear after a match is saved.")
+                        topBowlers.forEachIndexed { index, p -> InfoCard("#${index + 1} ${p.name}", "${p.wickets} wickets • ${p.bowlingRuns} runs • ${p.bowlingBalls / 6}.${p.bowlingBalls % 6} overs") }
+                    }
                 }
                 else -> {
                     item { ScoreCard(team, runs, wickets, overs, started) }
