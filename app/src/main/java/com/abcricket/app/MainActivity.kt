@@ -22,10 +22,15 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 private val Green = Color(0xFF19B56B)
 private val Dark = Color(0xFF08110D)
 private val Panel = Color(0xFF14221B)
+
+private data class MatchRecord(val date: String, val team: String, val opponent: String, val score: String, val overs: String, val toss: String)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,6 +124,8 @@ fun CricketHome() {
     var bowlerName by remember { mutableStateOf("") }
     var playerName by remember { mutableStateOf("") }
     var playerRole by remember { mutableStateOf("Batsman") }
+    var matchSaved by remember { mutableStateOf(false) }
+    val matchHistory = remember { mutableStateListOf<MatchRecord>() }
     val players = remember { mutableStateListOf<Pair<String, String>>() }
     val context = LocalContext.current
     val preferences = remember { context.getSharedPreferences("ab_cricket_data", android.content.Context.MODE_PRIVATE) }
@@ -134,6 +141,12 @@ fun CricketHome() {
         runs = preferences.getInt("runs", 0)
         wickets = preferences.getInt("wickets", 0)
         balls = preferences.getInt("balls", 0)
+        matchSaved = preferences.getBoolean("matchSaved", false)
+        val savedHistory = JSONArray(preferences.getString("matchHistory", "[]"))
+        for (i in 0 until savedHistory.length()) {
+            val item = savedHistory.getJSONObject(i)
+            matchHistory.add(MatchRecord(item.optString("date"), item.optString("team"), item.optString("opponent"), item.optString("score"), item.optString("overs"), item.optString("toss")))
+        }
         val savedPlayers = JSONArray(preferences.getString("players", "[]"))
         for (i in 0 until savedPlayers.length()) {
             val item = savedPlayers.getJSONObject(i)
@@ -153,12 +166,13 @@ fun CricketHome() {
             .putInt("runs", runs).putInt("wickets", wickets).putInt("balls", balls).apply()
     }
     val overs = "${balls / 6}.${balls % 6}"
+    LaunchedEffect(matchSaved) { preferences.edit().putBoolean("matchSaved", matchSaved).apply() }
 
     Scaffold(
         containerColor = Dark,
         bottomBar = {
             NavigationBar(containerColor = Panel) {
-                listOf("Home", "Matches", "Players", "Rankings").forEach { item ->
+                listOf("Home", "Matches", "Players", "Rankings", "History").forEach { item ->
                     NavigationBarItem(
                         selected = selected == item,
                         onClick = { selected = item },
@@ -166,6 +180,7 @@ fun CricketHome() {
                             "Matches" -> Icons.Default.SportsCricket
                             "Players" -> Icons.Default.People
                             "Rankings" -> Icons.Default.EmojiEvents
+                            "History" -> Icons.Default.History
                             else -> Icons.Default.Home
                         }, contentDescription = item) },
                         label = { Text(item) },
@@ -248,7 +263,26 @@ fun CricketHome() {
                             OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
                         }
                     }
-                    item { Text("Innings ends at the selected over limit or 10 wickets. Match saving and cloud sync will be added in a later stage.", color = Color.LightGray, fontSize = 12.sp) }
+                    item {
+                        if (balls > 0) {
+                            Button(onClick = {
+                                if (!matchSaved) {
+                                    val date = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
+                                    val record = MatchRecord(date, team, opponentTeam, "$runs/$wickets", overs, "$tossWinner chose to $tossDecision")
+                                    matchHistory.add(0, record)
+                                    val json = JSONArray()
+                                    matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss)) }
+                                    preferences.edit().putString("matchHistory", json.toString()).apply()
+                                    matchSaved = true
+                                    started = false
+                                }
+                            }, enabled = !matchSaved, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Green)) {
+                                Text(if (matchSaved) "MATCH SAVED" else "SAVE MATCH TO HISTORY", color = Dark, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; started = false; matchSaved = false }, modifier = Modifier.fillMaxWidth()) { Text("NEW MATCH / RESET") }
+                    }
+                    item { Text("Saved scorecards are stored on this device. Detailed player-by-player statistics and cloud sync are future upgrades.", color = Color.LightGray, fontSize = 12.sp) }
                 }
                 "Players" -> {
                     item { InfoCard("PLAYER MANAGEMENT", "Add squad members and assign each player a role.") }
@@ -303,6 +337,33 @@ fun CricketHome() {
                     }
                     item { Text("Squad entries are temporary for now. Permanent saving and cloud sync will be added in the database stage.", color = Color.LightGray, fontSize = 11.sp) }
                 }
+                "History" -> {
+                    item { InfoCard("MATCH HISTORY", "Your saved match scorecards appear here.") }
+                    if (matchHistory.isEmpty()) {
+                        item { InfoCard("NO SAVED MATCHES", "Complete some scoring and tap Save Match to keep its scorecard here.") }
+                    } else {
+                        items(matchHistory.size) { index ->
+                            val match = matchHistory[index]
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(match.date, color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Spacer(Modifier.weight(1f))
+                                        IconButton(onClick = {
+                                            matchHistory.removeAt(index)
+                                            val json = JSONArray()
+                                            matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss)) }
+                                            preferences.edit().putString("matchHistory", json.toString()).apply()
+                                        }) { Icon(Icons.Default.DeleteOutline, contentDescription = "Delete scorecard", tint = Color(0xFFE57373)) }
+                                    }
+                                    Text(match.team + " vs " + match.opponent, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                                    Text(match.team + "  " + match.score, color = Green, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                                    Text("Overs: " + match.overs + "  |  " + match.toss, color = Color.LightGray, fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+                }
                 "Rankings" -> {
                     item { InfoCard("TOP BATSMEN", "Rankings will appear after match statistics are saved.") }
                     item { InfoCard("TOP BOWLERS", "Wickets, economy and bowling averages will be calculated here.") }
@@ -322,6 +383,7 @@ fun CricketHome() {
                         InfoCard("Live scorecards", "Ball-by-ball scoring and match summaries")
                         InfoCard("Player statistics", "Batting, bowling and career records")
                         InfoCard("Tournaments", "Fixtures, points tables and leaderboards")
+                        InfoCard("Match history", "Open History to view saved scorecards")
                     }
                 }
             }
