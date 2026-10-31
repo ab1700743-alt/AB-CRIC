@@ -92,8 +92,8 @@ private object SupabaseRoomsApi {
         }
     }
 
-    suspend fun createRoom(token: String, userId: String, name: String, description: String): String = withContext(Dispatchers.IO) {
-        val body = JSONObject().put("name", name).put("description", description).put("owner_id", userId)
+    suspend fun createRoom(token: String, userId: String, name: String): String = withContext(Dispatchers.IO) {
+        val body = JSONObject().put("name", name).put("description", "").put("owner_id", userId)
         val response = JSONArray(request("/rest/v1/cricket_circles?select=id", "POST", token, body, "return=representation"))
         response.getJSONObject(0).getString("id")
     }
@@ -112,7 +112,6 @@ fun RoomsScreen() {
     var password by remember { mutableStateOf("") }
     var displayName by remember { mutableStateOf("") }
     var roomName by remember { mutableStateOf("") }
-    var roomDescription by remember { mutableStateOf("") }
     var inviteCode by remember { mutableStateOf("") }
     var accessToken by remember { mutableStateOf(prefs.getString("access_token", "") ?: "") }
     var userId by remember { mutableStateOf(prefs.getString("user_id", "") ?: "") }
@@ -190,13 +189,12 @@ fun RoomsScreen() {
             HorizontalDivider(color = Color.DarkGray)
             Text("CREATE A ROOM", color = RoomGreen, fontWeight = FontWeight.Bold)
             OutlinedTextField(value = roomName, onValueChange = { roomName = it }, label = { Text("Room name") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
-            OutlinedTextField(value = roomDescription, onValueChange = { roomDescription = it }, label = { Text("Description (optional)") }, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
             Button(onClick = {
                 scope.launch {
                     busy = true
                     try {
-                        SupabaseRoomsApi.createRoom(accessToken, userId, roomName.trim(), roomDescription.trim())
-                        roomName = ""; roomDescription = ""; loadRooms()
+                        SupabaseRoomsApi.createRoom(accessToken, userId, roomName.trim())
+                        roomName = ""; loadRooms()
                         message = "Room create ho gaya."
                     } catch (e: Exception) { message = e.message ?: "Room create nahi hua." }
                     busy = false
