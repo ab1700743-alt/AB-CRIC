@@ -3,6 +3,8 @@ package com.abcricket.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,7 +27,69 @@ private val Panel = Color(0xFF14221B)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { ABTheme { CricketHome() } }
+        setContent { ABTheme { var showSplash by remember { mutableStateOf(true) }; if (showSplash) ABLaunchScreen { showSplash = false } else CricketHome() } }
+    }
+}
+
+
+@Composable
+fun ABLaunchScreen(onFinished: () -> Unit) {
+    val transition = rememberInfiniteTransition(label = "ab_splash")
+    val ballRotation by transition.animateFloat(
+        initialValue = -25f,
+        targetValue = 335f,
+        animationSpec = infiniteRepeatable(tween(1500, easing = LinearEasing)),
+        label = "ball_rotation"
+    )
+    val glow by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(900), RepeatMode.Reverse),
+        label = "logo_glow"
+    )
+    var progress by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(Unit) {
+        val startedAt = System.currentTimeMillis()
+        while (progress < 1f) {
+            progress = ((System.currentTimeMillis() - startedAt) / 2800f).coerceIn(0f, 1f)
+            kotlinx.coroutines.delay(35)
+        }
+        onFinished()
+    }
+    Box(
+        modifier = Modifier.fillMaxSize().background(Dark),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 36.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Spacer(Modifier.height(8.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("🏏", fontSize = 58.sp, modifier = Modifier.rotate(ballRotation))
+                Text(
+                    "AB",
+                    color = Color.White.copy(alpha = glow),
+                    fontSize = 86.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = (-5).sp
+                )
+                Text("CRICKET", color = Green, fontSize = 34.sp, fontWeight = FontWeight.Black, letterSpacing = 5.sp)
+                Text("PLAY  •  SCORE  •  RANK", color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                Spacer(Modifier.height(18.dp))
+                Text("EVERY RUN TELLS A STORY", color = Color.White, fontSize = 13.sp, letterSpacing = 1.5.sp)
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().height(5.dp),
+                    color = Green,
+                    trackColor = Panel
+                )
+                Text("GETTING THE GAME READY", color = Color.LightGray, fontSize = 10.sp, letterSpacing = 2.sp)
+            }
+        }
     }
 }
 
