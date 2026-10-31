@@ -1,5 +1,7 @@
 # AB Cricket
 
+**Established by:** Syed Abdul Basit
+
 AB Cricket is an Android cricket scoring and statistics application.
 
 ## Planned features
