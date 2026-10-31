@@ -79,6 +79,7 @@ fun ABLaunchScreen(onFinished: () -> Unit) {
                 Text("PLAY  •  SCORE  •  RANK", color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 Spacer(Modifier.height(18.dp))
                 Text("EVERY RUN TELLS A STORY", color = Color.White, fontSize = 13.sp, letterSpacing = 1.5.sp)
+                Text("BY SYED ABDUL BASIT", color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 LinearProgressIndicator(
@@ -203,6 +204,9 @@ fun CricketHome() {
                         InfoCard("Tournaments", "Fixtures, points tables and leaderboards")
                     }
                 }
+            }
+            item {
+                InfoCard("ESTABLISHED BY", "Syed Abdul Basit")
             }
             item { Spacer(Modifier.height(12.dp)) }
         }
