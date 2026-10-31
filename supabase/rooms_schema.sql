@@ -85,6 +85,22 @@ create trigger on_circle_created_add_owner
 after insert on public.cricket_circles
 for each row execute procedure public.add_circle_owner();
 
+-- SECURITY DEFINER helper avoids recursive RLS checks on circle_members.
+create or replace function public.is_circle_member(p_circle_id uuid, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $
+  select exists (
+    select 1 from public.circle_members
+    where circle_id = p_circle_id and user_id = p_user_id
+  );
+$;
+revoke all on function public.is_circle_member(uuid, uuid) from public;
+grant execute on function public.is_circle_member(uuid, uuid) to authenticated;
+
 alter table public.profiles enable row level security;
 alter table public.cricket_circles enable row level security;
 alter table public.circle_members enable row level security;
@@ -103,8 +119,7 @@ for update to authenticated using (id = (select auth.uid())) with check (id = (s
 drop policy if exists "circles_select_members" on public.cricket_circles;
 create policy "circles_select_members" on public.cricket_circles
 for select to authenticated using (
-  exists (select 1 from public.circle_members m
-          where m.circle_id = id and m.user_id = (select auth.uid()))
+  public.is_circle_member(id, (select auth.uid()))
 );
 drop policy if exists "circles_insert_owner" on public.cricket_circles;
 create policy "circles_insert_owner" on public.cricket_circles
@@ -128,8 +143,7 @@ for delete to authenticated using (owner_id = (select auth.uid()));
 drop policy if exists "members_select_circle_members" on public.circle_members;
 create policy "members_select_circle_members" on public.circle_members
 for select to authenticated using (
-  exists (select 1 from public.circle_members mine
-          where mine.circle_id = circle_id and mine.user_id = (select auth.uid()))
+  public.is_circle_member(circle_id, (select auth.uid()))
 );
 
 -- Only room owners/admins can create invite codes. Members can read invite
@@ -137,8 +151,7 @@ for select to authenticated using (
 drop policy if exists "invites_select_room_members" on public.circle_invites;
 create policy "invites_select_room_members" on public.circle_invites
 for select to authenticated using (
-  exists (select 1 from public.circle_members m
-          where m.circle_id = circle_id and m.user_id = (select auth.uid()))
+  public.is_circle_member(circle_id, (select auth.uid()))
 );
 drop policy if exists "invites_insert_room_admins" on public.circle_invites;
 create policy "invites_insert_room_admins" on public.circle_invites
