@@ -93,9 +93,8 @@ private object SupabaseRoomsApi {
     }
 
     suspend fun createRoom(token: String, userId: String, name: String): String = withContext(Dispatchers.IO) {
-        val body = JSONObject().put("name", name).put("description", "").put("owner_id", userId)
-        val response = JSONArray(request("/rest/v1/cricket_circles?select=id", "POST", token, body, "return=representation"))
-        response.getJSONObject(0).getString("id")
+        val body = JSONObject().put("p_name", name)
+        request("/rest/v1/rpc/create_cricket_circle", "POST", token, body).trim().trim('"')
     }
 
     suspend fun joinRoom(token: String, code: String) = withContext(Dispatchers.IO) {
