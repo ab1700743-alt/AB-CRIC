@@ -271,6 +271,7 @@ fun CricketHome() {
             when (selected) {
                 "Matches" -> {
                     item {
+                        if (!started) {
                         Text("MATCH SETUP", color = Green, fontWeight = FontWeight.Bold)
                         OutlinedTextField(value = team, onValueChange = { team = it }, label = { Text("Team 1 / batting team") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
                         Spacer(Modifier.height(8.dp))
@@ -324,6 +325,55 @@ fun CricketHome() {
                             Text("START MATCH", color = Dark, fontWeight = FontWeight.Black, fontSize = 16.sp)
                         }
                     }
+                    if (started) {
+                        item {
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text("LIVE MATCH • INNINGS $innings", color = Green, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                                        Spacer(Modifier.weight(1f))
+                                        Text("$runs/$wickets  ($overs)", color = Color.White, fontWeight = FontWeight.Black, fontSize = 17.sp)
+                                    }
+                                    Text("BATTING NOW", color = Color.LightGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Column(Modifier.weight(1f)) {
+                                            PlayerPicker("STRIKER", strikerName, players, true) { strikerName = it }
+                                            Text("$strikerRuns runs • $strikerBalls balls", color = Green, fontSize = 11.sp)
+                                        }
+                                        Column(Modifier.weight(1f)) {
+                                            PlayerPicker("NON-STRIKER", nonStrikerName, players, true) { nonStrikerName = it }
+                                            Text("$nonStrikerRuns runs • $nonStrikerBalls balls", color = Color.LightGray, fontSize = 11.sp)
+                                        }
+                                    }
+                                    Text("CURRENT BOWLER", color = Color.LightGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    PlayerPicker("BOWLER", bowlerName, players, true) { bowlerName = it }
+                                    Text("${bowlerBalls / 6}.${bowlerBalls % 6} overs • $bowlerRuns runs • $bowlerWickets wickets", color = Green, fontSize = 11.sp)
+                                    HorizontalDivider(color = Color.DarkGray)
+                                    Text("QUICK SCORING", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                        listOf(0, 1, 2, 3, 4, 6).forEach { value ->
+                                            Button(onClick = { if (!awaitingNextBatter && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10 && (innings == 1 || runs < target)) { runs += value; balls++; bowlerBalls++; bowlerRuns += value; strikerRuns += value; strikerBalls++; if (value % 2 == 1) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb }; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb } } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("$value", color = Green, fontWeight = FontWeight.Bold) }
+                                        }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; bowlerRuns++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("WIDE", color = Green, fontSize = 10.sp) }
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; bowlerRuns++; strikerBalls++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("NO BALL", color = Green, fontSize = 10.sp) }
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; balls++; bowlerBalls++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("BYE", color = Green, fontSize = 10.sp) }
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; balls++; bowlerBalls++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("LEG-BYE", color = Green, fontSize = 10.sp) }
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { wickets++; balls++; bowlerBalls++; bowlerWickets++; strikerBalls++; awaitingNextBatter = wickets < 10 && players.any { it.first != strikerName && it.first != nonStrikerName }; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old } } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E3030))) { Text("WICKET") }
+                                        Button(onClick = { if (!awaitingNextBatter && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10 && (innings == 1 || runs < target)) { balls++; bowlerBalls++; strikerBalls++; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old } } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("DOT BALL", color = Color.White) }
+                                    }
+                                    if (awaitingNextBatter && wickets < 10) {
+                                        Text("WICKET FALLEN — SELECT NEXT BATTER", color = Green, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                                        PlayerPicker("NEXT BATTER", "", players.filter { it.first != strikerName && it.first != nonStrikerName }, true) { next -> strikerName = next; strikerRuns = 0; strikerBalls = 0; awaitingNextBatter = false }
+                                    }
+                                }
+                            }
+                        }
+                        }
+                    }
                     item {
                         Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -375,7 +425,7 @@ fun CricketHome() {
                             Text("Check team names, overs (1–100), and choose two different opening batters.", color = Color(0xFFFFB36B), fontSize = 11.sp)
                         }
                     }
-                    if (started) {
+                    if (started && false) {
                         item {
                             Text("EXTRAS", color = Color.White, fontWeight = FontWeight.Bold)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
