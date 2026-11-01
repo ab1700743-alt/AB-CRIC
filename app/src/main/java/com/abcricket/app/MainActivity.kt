@@ -561,7 +561,7 @@ fun CricketHome() {
                                     val result = if (innings == 2 && runs >= target) "$team won by ${10 - wickets} wickets" else if (innings == 2 && runs < target && (wickets >= 10 || balls >= (oversLimit.toIntOrNull() ?: 20) * 6)) "$firstInningsTeam won by ${firstInningsRuns - runs} runs" else "Innings in progress"
                                     val scoreText = if (innings == 2) "$firstInningsRuns/$firstInningsWickets ($firstInningsOvers) & $runs/$wickets ($overs) • $result" else "$runs/$wickets"
                                     val currentBowlerLines = inningsBowlerFigures.toList() + if (bowlerName.isNotBlank()) listOf("$bowlerName: ${bowlerBalls / 6}.${bowlerBalls % 6} overs, $bowlerRuns runs, $bowlerWickets wickets") else emptyList()
-                                    val detailsText = "INNINGS 1: $firstInningsTeam $firstInningsRuns/$firstInningsWickets ($firstInningsOvers)\\nBOWLERS\\n$firstInningsBowlerFigures\\nINNINGS 2: $team $runs/$wickets ($overs)\\nBATTERS\\n$strikerName: $strikerRuns runs off $strikerBalls balls\\n$nonStrikerName: $nonStrikerRuns runs off $nonStrikerBalls balls\\nBOWLERS\\n${currentBowlerLines.joinToString("\\n")}"
+                                    val detailsText = "INNINGS 1: $firstInningsTeam $firstInningsRuns/$firstInningsWickets ($firstInningsOvers)\\nBATTERS\\n$firstStrikerName: $firstStrikerRuns runs off $firstStrikerBalls balls\\n$firstNonStrikerName: $firstNonStrikerRuns runs off $firstNonStrikerBalls balls\\nBOWLERS\\n$firstInningsBowlerFigures\\nINNINGS 2: $team $runs/$wickets ($overs)\\nBATTERS\\n$strikerName: $strikerRuns runs off $strikerBalls balls\\n$nonStrikerName: $nonStrikerRuns runs off $nonStrikerBalls balls\\nBOWLERS\\n${currentBowlerLines.joinToString("\\n")}\\nLAST WICKET: ${lastDismissal.ifBlank { "Not recorded" }}\\nEXTRAS: $extras"
                                     val record = MatchRecord(date, firstInningsTeam.ifBlank { team }, opponentTeam, scoreText, overs, "$tossWinner chose to $tossDecision", detailsText)
                                     matchHistory.add(0, record)
                                     val battingFigures = mutableListOf<Triple<String, Int, Int>>()
@@ -593,7 +593,7 @@ fun CricketHome() {
                                         careerStats.add(PlayerCareer(name, role, previous.matches + if (matchPlayerNames.add(name.lowercase(Locale.ROOT))) 1 else 0, previous.runs, previous.balls, previous.wickets + bowlingWicketsAdded, previous.bowlingRuns + entries.sumOf { it.second }, previous.bowlingBalls + bowlingBallsAdded))
                                     }
                                     val json = JSONArray()
-                                    matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss)) }
+                                    matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss).put("details", m.details)) }
                                     preferences.edit().putString("matchHistory", json.toString()).apply()
                                     matchSaved = true
                                     started = false
