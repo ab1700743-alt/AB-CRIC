@@ -163,7 +163,6 @@ fun CricketHome() {
     val careerStats = remember { mutableStateListOf<PlayerCareer>() }
     val context = LocalContext.current
     val cloudScope = rememberCoroutineScope()
-    var cloudMessage by remember { mutableStateOf("") }
     val preferences = remember { context.getSharedPreferences("ab_cricket_data", android.content.Context.MODE_PRIVATE) }
     LaunchedEffect(Unit) {
         team = preferences.getString("team", team) ?: team
@@ -465,7 +464,7 @@ fun CricketHome() {
                                     val json = JSONArray()
                                     matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss)) }
                                     preferences.edit().putString("matchHistory", json.toString()).apply()
-                                    cloudMessage = "Match aur player records is device par save ho gaye."\n                                    matchSaved = true
+                                    matchSaved = true
                                     started = false
                                 }
                             }, enabled = !matchSaved, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Green)) {
