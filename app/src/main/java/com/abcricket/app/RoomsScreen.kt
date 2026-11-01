@@ -25,9 +25,9 @@ private val RoomPanel = Color(0xFF14221B)
 private const val SUPABASE_URL = "https://wcpzmaqwxvvowkdgapsj.supabase.co"
 private const val SUPABASE_PUBLISHABLE_KEY = "sb_publishable_epu8W3eriwDPTVm7TLvoOg_87fuLBQx"
 
-private data class RoomPlayer(val id: String, val name: String, val role: String)
+data class RoomPlayer(val id: String, val name: String, val role: String)
 
-private data class CricketRoom(
+data class CricketRoom(
     val id: String,
     val name: String,
     val description: String,
