@@ -317,8 +317,30 @@ fun CricketHome() {
                         }
                     }
                     item {
-                        Button(onClick = { started = !started }, enabled = started || (team.isNotBlank() && opponentTeam.isNotBlank() && (oversLimit.toIntOrNull() ?: 0) > 0), modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Green)) {
+                        Button(onClick = {
+                            if (started) {
+                                started = false
+                            } else {
+                                val configuredOvers = oversLimit.toIntOrNull() ?: 0
+                                val validTeams = team.isNotBlank() && opponentTeam.isNotBlank() && !team.equals(opponentTeam, true)
+                                val validBatters = strikerName.isBlank() || nonStrikerName.isBlank() || !strikerName.equals(nonStrikerName, true)
+                                if (validTeams && configuredOvers in 1..100 && validBatters) {
+                                    if (innings == 1) {
+                                        val firstBattingTeam = if ((tossWinner == team && tossDecision == "Bat") || (tossWinner == opponentTeam && tossDecision == "Bowl")) team else opponentTeam
+                                        if (firstBattingTeam != team) {
+                                            val oldTeam = team
+                                            team = opponentTeam
+                                            opponentTeam = oldTeam
+                                        }
+                                    }
+                                    started = true
+                                }
+                            }
+                        }, enabled = started || (team.isNotBlank() && opponentTeam.isNotBlank() && !team.equals(opponentTeam, true) && (oversLimit.toIntOrNull() ?: 0) in 1..100 && (strikerName.isBlank() || nonStrikerName.isBlank() || !strikerName.equals(nonStrikerName, true))), modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Green)) {
                             Text(if (started) "PAUSE INNINGS" else "START INNINGS", color = Dark, fontWeight = FontWeight.Bold)
+                        }
+                        if (!started && (team.isBlank() || opponentTeam.isBlank() || team.equals(opponentTeam, true) || (oversLimit.toIntOrNull() ?: 0) !in 1..100 || (strikerName.isNotBlank() && strikerName.equals(nonStrikerName, true))) ) {
+                            Text("Check team names, overs (1–100), and choose two different opening batters.", color = Color(0xFFFFB36B), fontSize = 11.sp)
                         }
                     }
                     if (started) {
