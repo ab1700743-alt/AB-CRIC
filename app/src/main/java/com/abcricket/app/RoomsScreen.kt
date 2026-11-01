@@ -231,14 +231,28 @@ fun RoomsScreen(onRoomEntered: () -> Unit = {}) {
             Button(onClick = {
                 scope.launch {
                     busy = true
+                    message = ""
                     try {
-                        SupabaseRoomsApi.createRoom(accessToken, userId, roomName.trim())
-                        roomName = ""; loadRooms()
-                        message = "Room create ho gaya."
+                        val createdRoomId = SupabaseRoomsApi.createRoom(accessToken, userId, roomName.trim())
+                        val updatedRooms = SupabaseRoomsApi.rooms(accessToken, userId)
+                        rooms = updatedRooms
+                        val createdRoom = updatedRooms.firstOrNull { it.id == createdRoomId }
+                        if (createdRoom != null) {
+                            selectedRoom = createdRoom
+                            prefs.edit()
+                                .putString("selected_room_id", createdRoom.id)
+                                .putString("selected_room_name", createdRoom.name)
+                                .putString("selected_room_role", createdRoom.role)
+                                .apply()
+                            roomName = ""
+                            onRoomEntered()
+                        } else {
+                            message = "Room ban gaya, lekin list mein load nahi hua. REFRESH dabayein."
+                        }
                     } catch (e: Exception) { message = e.message ?: "Room create nahi hua." }
                     busy = false
                 }
-            }, enabled = !busy && roomName.trim().length >= 2, modifier = Modifier.fillMaxWidth()) { Text("CREATE ROOM") }
+            }, enabled = !busy && roomName.trim().length >= 2, modifier = Modifier.fillMaxWidth()) { Text(if (busy) "PLEASE WAIT..." else "CREATE ROOM") }
             HorizontalDivider(color = Color.DarkGray)
             Text("JOIN WITH INVITE CODE", color = RoomGreen, fontWeight = FontWeight.Bold)
             OutlinedTextField(value = inviteCode, onValueChange = { inviteCode = it.uppercase().take(20) }, label = { Text("Invite code") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
