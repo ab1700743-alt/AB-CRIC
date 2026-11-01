@@ -200,7 +200,7 @@ fun CricketHome() {
         val savedHistory = JSONArray(preferences.getString("matchHistory", "[]"))
         for (i in 0 until savedHistory.length()) {
             val item = savedHistory.getJSONObject(i)
-            matchHistory.add(MatchRecord(item.optString("date"), item.optString("team"), item.optString("opponent"), item.optString("score"), item.optString("overs"), item.optString("toss"), item.optString("details"))))
+            matchHistory.add(MatchRecord(item.optString("date"), item.optString("team"), item.optString("opponent"), item.optString("score"), item.optString("overs"), item.optString("toss"), item.optString("details")))
         }
         val savedCareer = JSONArray(preferences.getString("careerStats", "[]"))
         for (i in 0 until savedCareer.length()) { val item = savedCareer.getJSONObject(i); careerStats.add(PlayerCareer(item.optString("name"), item.optString("role"), item.optInt("matches"), item.optInt("runs"), item.optInt("balls"), item.optInt("wickets"), item.optInt("bowlingRuns"), item.optInt("bowlingBalls"))) }
