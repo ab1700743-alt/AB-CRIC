@@ -612,10 +612,23 @@ fun CricketHome() {
 
 @Composable
 fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor = Color.White, unfocusedTextColor = Color.White,
-    focusedBorderColor = Green, unfocusedBorderColor = Color.Gray,
-    focusedLabelColor = Green, unfocusedLabelColor = Color.LightGray,
-    cursorColor = Green
+    focusedTextColor = Color.White,
+    unfocusedTextColor = Color.White,
+    disabledTextColor = Color.LightGray,
+    focusedContainerColor = Color(0xFF050805),
+    unfocusedContainerColor = Color(0xFF050805),
+    disabledContainerColor = Color(0xFF101510),
+    focusedBorderColor = Green,
+    unfocusedBorderColor = Color(0xFF607067),
+    disabledBorderColor = Color.DarkGray,
+    focusedLabelColor = Green,
+    unfocusedLabelColor = Color(0xFFB8C8BE),
+    disabledLabelColor = Color.Gray,
+    cursorColor = Green,
+    selectionColors = TextSelectionColors(
+        handleColor = Green,
+        backgroundColor = Green.copy(alpha = 0.35f)
+    )
 )
 
 @Composable
