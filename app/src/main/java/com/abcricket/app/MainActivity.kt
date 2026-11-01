@@ -45,15 +45,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun CricketEntry() {
-    val context = LocalContext.current
-    val prefs = remember { context.getSharedPreferences("ab_cricket_rooms", android.content.Context.MODE_PRIVATE) }
-    var enteredRoom by remember {
-        mutableStateOf(
-            prefs.getString("access_token", "").orEmpty().isNotBlank() &&
-            prefs.getString("selected_room_id", "").orEmpty().isNotBlank()
-        )
-    }
-    if (enteredRoom) CricketHome() else RoomsScreen(onRoomEntered = { enteredRoom = true })
+    CricketHome()
 }
 
 @Composable
@@ -238,14 +230,13 @@ fun CricketHome() {
         containerColor = Dark,
         bottomBar = {
             NavigationBar(containerColor = Panel) {
-                listOf("Home", "Matches", "Players", "Rooms", "Rankings", "History").forEach { item ->
+                listOf("Home", "Matches", "Players", "Rankings", "History").forEach { item ->
                     NavigationBarItem(
                         selected = selected == item,
                         onClick = { selected = item },
                         icon = { Icon(when(item) {
                             "Matches" -> Icons.Default.SportsCricket
                             "Players" -> Icons.Default.People
-                            "Rooms" -> Icons.Default.Groups
                             "Rankings" -> Icons.Default.EmojiEvents
                             "History" -> Icons.Default.History
                             else -> Icons.Default.Home
@@ -276,7 +267,6 @@ fun CricketHome() {
                 }
             }
             when (selected) {
-                "Rooms" -> { item { RoomsScreen() } }
                 "Matches" -> {
                     item {
                         Text("MATCH SETUP", color = Green, fontWeight = FontWeight.Bold)
@@ -583,13 +573,13 @@ fun CricketHome() {
                     }
                 }
                 "Rankings" -> {
-                    val topBatters = careerStats.sortedByDescending { it.runs }
+                    val topBatters = careerStats.sortedByDescending { rankingPoints(it) }
                     val topBowlers = careerStats.filter { it.bowlingBalls > 0 || it.wickets > 0 }.sortedWith(compareByDescending<PlayerCareer> { it.wickets }.thenBy { if (it.bowlingBalls == 0) Double.MAX_VALUE else it.bowlingRuns.toDouble() / (it.bowlingBalls / 6.0) })
-                    item { InfoCard("CAREER LEADERBOARD", "Saved match figures • ${careerStats.size} players tracked") }
+                    item { InfoCard("AUTOMATIC LEADERBOARD", "Points = runs + 20 per wicket + batting strike-rate bonus + bowling economy bonus • ${careerStats.size} players tracked") }
                     item {
-                        Text("TOP BATSMEN", color = Green, fontWeight = FontWeight.Bold)
+                        Text("OVERALL PLAYER RANKING", color = Green, fontWeight = FontWeight.Bold)
                         if (topBatters.isEmpty()) InfoCard("NO BATTING RECORDS", "Save a match with selected batters to start the rankings.")
-                        topBatters.forEachIndexed { index, p -> InfoCard("#${index + 1} ${p.name}", "${p.runs} runs • ${p.balls} balls • SR ${if (p.balls == 0) "0.0" else String.format(Locale.getDefault(), "%.1f", p.runs * 100.0 / p.balls)}") }
+                        topBatters.forEachIndexed { index, p -> InfoCard("#${index + 1} ${p.name}", "${rankingPoints(p)} points • ${p.runs} runs • ${p.wickets} wickets • SR ${if (p.balls == 0) "0.0" else String.format(Locale.getDefault(), "%.1f", p.runs * 100.0 / p.balls)}") }
                     }
                     item {
                         Text("TOP BOWLERS", color = Green, fontWeight = FontWeight.Bold)
@@ -598,8 +588,7 @@ fun CricketHome() {
                     }
                 }
                 else -> {
-                    item { ABHomeDashboard(team, opponentTeam, runs, wickets, overs, started, careerStats, { selected = "Matches" }, { selected = "Rooms" }, { selected = "Players" }, { selected = "Rankings" }, { selected = "History" }, { selected = "Rooms" }) }
-                    item { RoomsScreen() }
+                    item { ABHomeDashboard(team, opponentTeam, runs, wickets, overs, started, careerStats, { selected = "Matches" }, { selected = "Players" }, { selected = "Rankings" }, { selected = "History" }, { selected = "Players" }) }
                 }
             }
             item {
@@ -686,23 +675,28 @@ fun PlayerPicker(label: String, selectedPlayer: String, players: List<Pair<Strin
 }
 
 @Composable
-fun ABHomeDashboard(team:String, opponent:String, runs:Int, wickets:Int, overs:String, started:Boolean, careerStats:List<PlayerCareer>, onMatches:()->Unit, onRooms:()->Unit, onPlayers:()->Unit, onRankings:()->Unit, onHistory:()->Unit, onAccount:()->Unit) {
+fun rankingPoints(p: PlayerCareer): Int {
+    val strikeRate = if (p.balls > 0) p.runs * 100.0 / p.balls else 0.0
+    val overs = p.bowlingBalls / 6.0
+    val economy = if (overs > 0) p.bowlingRuns / overs else 0.0
+    val battingBonus = (strikeRate / 10.0).toInt().coerceAtMost(20)
+    val bowlingBonus = if (overs > 0) (10.0 - economy).coerceAtLeast(0.0).toInt().coerceAtMost(10) else 0
+    return p.runs + p.wickets * 20 + battingBonus + bowlingBonus
+}
+
+fun ABHomeDashboard(team:String, opponent:String, runs:Int, wickets:Int, overs:String, started:Boolean, careerStats:List<PlayerCareer>, onMatches:()->Unit, onPlayers:()->Unit, onRankings:()->Unit, onHistory:()->Unit, onAccount:()->Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement=Arrangement.spacedBy(17.dp)) {
         Row(verticalAlignment=Alignment.CenterVertically) {
             Column { Text("AB CRICKET", color=Color.White, fontSize=28.sp, fontWeight=FontWeight.Black); Text("PLAY • COMPETE • WIN", color=Green, fontSize=10.sp, fontWeight=FontWeight.Bold, letterSpacing=2.sp) }
             Spacer(Modifier.weight(1f))
-            TextButton(onClick=onAccount) {
-                Icon(Icons.Default.AccountCircle, contentDescription=null, tint=Green)
-                Spacer(Modifier.width(5.dp))
-                Text("LOGIN / ACCOUNT", color=Green, fontSize=10.sp, fontWeight=FontWeight.Bold)
-            }
+
         }
         Card(shape=RoundedCornerShape(24.dp), modifier=Modifier.fillMaxWidth()) {
             Box(Modifier.background(Brush.linearGradient(listOf(Color(0xFF075B36),Color(0xFF102B43),Color(0xFF07130E)))).padding(20.dp)) {
                 Column(verticalArrangement=Arrangement.spacedBy(9.dp)) {
                     Text("YOUR CRICKET UNIVERSE", color=Color(0xFF8DFFB5), fontSize=10.sp, fontWeight=FontWeight.Bold, letterSpacing=2.sp)
                     Text("Every run tells\na story.", color=Color.White, fontSize=31.sp, fontWeight=FontWeight.Black, lineHeight=35.sp)
-                    Text("Manage your squad. Own the match. Climb the rankings.", color=Color.White.copy(alpha=.85f), fontSize=12.sp)
+                    Text("Start a match. Track every performance. Climb the rankings.", color=Color.White.copy(alpha=.85f), fontSize=12.sp)
                     Button(onClick=onMatches, colors=ButtonDefaults.buttonColors(containerColor=Color(0xFF55E879)), shape=RoundedCornerShape(50)) { Text("LET'S PLAY  →", color=Dark, fontWeight=FontWeight.Black) }
                     Text("🏏", fontSize=48.sp, modifier=Modifier.align(Alignment.End))
                 }
@@ -710,12 +704,12 @@ fun ABHomeDashboard(team:String, opponent:String, runs:Int, wickets:Int, overs:S
         }
         Text("QUICK ACCESS", color=Color.White, fontWeight=FontWeight.Bold, fontSize=16.sp)
         Row(horizontalArrangement=Arrangement.spacedBy(9.dp)) {
-            QuickTile("My Rooms",Icons.Default.Groups,Modifier.weight(1f)){onRooms()}
-            QuickTile("New Match",Icons.Default.Add,Modifier.weight(1f)){onMatches()}
+            QuickTile("Start Match",Icons.Default.Add,Modifier.weight(1f)){onMatches()}
+            QuickTile("Players",Icons.Default.People,Modifier.weight(1f)){onPlayers()}
         }
         Row(horizontalArrangement=Arrangement.spacedBy(9.dp)) {
-            QuickTile("Players",Icons.Default.People,Modifier.weight(1f)){onPlayers()}
             QuickTile("Rankings",Icons.Default.EmojiEvents,Modifier.weight(1f)){onRankings()}
+            QuickTile("History",Icons.Default.History,Modifier.weight(1f)){onHistory()}
         }
         Card(colors=CardDefaults.cardColors(containerColor=Panel), shape=RoundedCornerShape(22.dp), modifier=Modifier.fillMaxWidth()) {
             Column(Modifier.padding(17.dp), verticalArrangement=Arrangement.spacedBy(10.dp)) {
@@ -738,13 +732,13 @@ fun ABHomeDashboard(team:String, opponent:String, runs:Int, wickets:Int, overs:S
             Text("⭐  TOP RANKINGS",color=Color.White,fontWeight=FontWeight.Bold,fontSize=16.sp)
             Spacer(Modifier.weight(1f)); TextButton(onClick=onRankings){Text("VIEW ALL",color=Green)}
         }
-        val top=careerStats.sortedByDescending{it.runs}.take(3)
+        val top=careerStats.sortedByDescending{rankingPoints(it)}.take(3)
         if(top.isEmpty()) InfoCard("YOUR LEADERBOARD STARTS HERE","Save your first match to see top run scorers and bowling leaders.")
         else top.forEachIndexed{ i,p ->
             Card(colors=CardDefaults.cardColors(containerColor=Panel),shape=RoundedCornerShape(16.dp),modifier=Modifier.fillMaxWidth()){
                 Row(Modifier.padding(14.dp),verticalAlignment=Alignment.CenterVertically){
                     Text("#${i+1}",color=Green,fontSize=22.sp,fontWeight=FontWeight.Black); Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)){Text(p.name,color=Color.White,fontWeight=FontWeight.Bold);Text("${p.role} • ${p.runs} runs • ${p.wickets} wickets",color=Color.LightGray,fontSize=11.sp)}
+                    Column(Modifier.weight(1f)){Text(p.name,color=Color.White,fontWeight=FontWeight.Bold);Text("${p.role} • ${p.runs} runs • ${p.wickets} wickets • ${rankingPoints(p)} pts",color=Color.LightGray,fontSize=11.sp)}
                     Icon(Icons.Default.EmojiEvents,null,tint=Color(0xFFFFC857))
                 }
             }
