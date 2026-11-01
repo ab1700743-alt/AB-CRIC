@@ -157,6 +157,7 @@ fun CricketHome() {
     var bowlerBalls by remember { mutableIntStateOf(0) }
     var playerName by remember { mutableStateOf("") }
     var playerRole by remember { mutableStateOf("Batsman") }
+    var opponentPlayersText by remember { mutableStateOf("") }
     var matchSaved by remember { mutableStateOf(false) }
     val matchHistory = remember { mutableStateListOf<MatchRecord>() }
     val players = remember { mutableStateListOf<Pair<String, String>>() }
