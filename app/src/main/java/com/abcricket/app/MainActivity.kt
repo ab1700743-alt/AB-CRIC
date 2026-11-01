@@ -257,7 +257,7 @@ fun CricketHome() {
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  WICKET — $selectedDismissal")
+                        ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  ${if (selectedDismissal == "Retired hurt") "RETIRED HURT (not out)" else "WICKET — $selectedDismissal"}")
                         balls++; bowlerBalls++; strikerBalls++
                         val retiredHurt = selectedDismissal == "Retired hurt"
                         if (!retiredHurt) {
@@ -371,6 +371,7 @@ fun CricketHome() {
                                     opponentBattingFirst = firstBattingTeam != team
                                     if (firstBattingTeam != team) { val oldTeam = team; team = opponentTeam; opponentTeam = oldTeam }
                                 }
+                                if (innings == 1 && runs == 0 && balls == 0) ballByBallLog.clear()
                                 started = true
                             }
                         }, enabled = !started && team.isNotBlank() && opponentTeam.isNotBlank() && !team.equals(opponentTeam, true) && (oversLimit.toIntOrNull() ?: 0) in 1..100 && (strikerName.isBlank() || nonStrikerName.isBlank() || !strikerName.equals(nonStrikerName, true)), modifier = Modifier.fillMaxWidth().height(54.dp), colors = ButtonDefaults.buttonColors(containerColor = Green)) {
@@ -498,8 +499,8 @@ fun CricketHome() {
                                 Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; bowlerRuns++; strikerBalls++ } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("NO-BALL +1", color = Green) }
                             }
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; balls++; bowlerBalls++ } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("BYE +1", color = Green) }
-                                Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; balls++; bowlerBalls++ } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("LEG-BYE +1", color = Green) }
+                                Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  BYE"); runs++; extras++; balls++; bowlerBalls++ } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("BYE +1", color = Green) }
+                                Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  LEG-BYE"); runs++; extras++; balls++; bowlerBalls++ } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("LEG-BYE +1", color = Green) }
                             }
                         }
                         item {
@@ -550,6 +551,7 @@ fun CricketHome() {
                                 firstInningsBowlerFigures = (inningsBowlerFigures + if (bowlerName.isNotBlank()) listOf("$bowlerName: ${bowlerBalls / 6}.${bowlerBalls % 6} overs, $bowlerRuns runs, $bowlerWickets wickets") else emptyList()).joinToString("\\n")
                                 inningsBowlerFigures.clear()
                                 overNeedsBowler = false
+                                ballByBallLog.add("— INNINGS 2 —")
                                 target = runs + 1
                                 val oldTeam = team
                                 team = opponentTeam
