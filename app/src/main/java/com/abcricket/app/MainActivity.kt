@@ -122,6 +122,19 @@ fun CricketHome() {
     var wickets by remember { mutableIntStateOf(0) }
     var balls by remember { mutableIntStateOf(0) }
     var extras by remember { mutableIntStateOf(0) }
+    var fours by remember { mutableIntStateOf(0) }
+    var sixes by remember { mutableIntStateOf(0) }
+    var wides by remember { mutableIntStateOf(0) }
+    var noBalls by remember { mutableIntStateOf(0) }
+    var byes by remember { mutableIntStateOf(0) }
+    var legByes by remember { mutableIntStateOf(0) }
+    var firstInningsExtras by remember { mutableIntStateOf(0) }
+    var firstInningsFours by remember { mutableIntStateOf(0) }
+    var firstInningsSixes by remember { mutableIntStateOf(0) }
+    var firstInningsWides by remember { mutableIntStateOf(0) }
+    var firstInningsNoBalls by remember { mutableIntStateOf(0) }
+    var firstInningsByes by remember { mutableIntStateOf(0) }
+    var firstInningsLegByes by remember { mutableIntStateOf(0) }
     var innings by remember { mutableIntStateOf(1) }
     var opponentBattingFirst by remember { mutableStateOf(false) }
     var firstInningsRuns by remember { mutableIntStateOf(0) }
@@ -188,6 +201,13 @@ fun CricketHome() {
         wickets = preferences.getInt("wickets", 0)
         balls = preferences.getInt("balls", 0)
         extras = preferences.getInt("extras", 0)
+        fours = preferences.getInt("fours", 0); sixes = preferences.getInt("sixes", 0)
+        wides = preferences.getInt("wides", 0); noBalls = preferences.getInt("noBalls", 0)
+        byes = preferences.getInt("byes", 0); legByes = preferences.getInt("legByes", 0)
+        firstInningsExtras = preferences.getInt("firstInningsExtras", 0)
+        firstInningsFours = preferences.getInt("firstInningsFours", 0); firstInningsSixes = preferences.getInt("firstInningsSixes", 0)
+        firstInningsWides = preferences.getInt("firstInningsWides", 0); firstInningsNoBalls = preferences.getInt("firstInningsNoBalls", 0)
+        firstInningsByes = preferences.getInt("firstInningsByes", 0); firstInningsLegByes = preferences.getInt("firstInningsLegByes", 0)
         innings = preferences.getInt("innings", 1)
         firstInningsRuns = preferences.getInt("firstInningsRuns", 0)
         firstInningsWickets = preferences.getInt("firstInningsWickets", 0)
@@ -227,6 +247,11 @@ fun CricketHome() {
             .putString("tossDecision", tossDecision).putString("strikerName", strikerName)
             .putString("nonStrikerName", nonStrikerName).putString("bowlerName", bowlerName)
             .putInt("runs", runs).putInt("wickets", wickets).putInt("balls", balls).putInt("extras", extras).putInt("innings", innings).putInt("firstInningsRuns", firstInningsRuns).putInt("firstInningsWickets", firstInningsWickets).putString("firstInningsOvers", firstInningsOvers).putString("firstInningsTeam", firstInningsTeam).putInt("target", target).apply()
+    }
+    LaunchedEffect(fours, sixes, wides, noBalls, byes, legByes, firstInningsExtras, firstInningsFours, firstInningsSixes, firstInningsWides, firstInningsNoBalls, firstInningsByes, firstInningsLegByes) {
+        preferences.edit().putInt("fours", fours).putInt("sixes", sixes).putInt("wides", wides).putInt("noBalls", noBalls).putInt("byes", byes).putInt("legByes", legByes)
+            .putInt("firstInningsExtras", firstInningsExtras).putInt("firstInningsFours", firstInningsFours).putInt("firstInningsSixes", firstInningsSixes)
+            .putInt("firstInningsWides", firstInningsWides).putInt("firstInningsNoBalls", firstInningsNoBalls).putInt("firstInningsByes", firstInningsByes).putInt("firstInningsLegByes", firstInningsLegByes).apply()
     }
     val overs = "${balls / 6}.${balls % 6}"
     val opponentRoster = opponentPlayerNames.filter { it.isNotBlank() }.map { it to "Opponent" }
@@ -414,14 +439,14 @@ fun CricketHome() {
                                     Text("QUICK SCORING", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                                     Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                         listOf(0, 1, 2, 3, 4, 6).forEach { value ->
-                                            Button(onClick = { if (!awaitingNextBatter && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  ${value} run${if (value == 1) "" else "s"}"); runs += value; balls++; bowlerBalls++; if (balls % 6 == 0) overNeedsBowler = true; bowlerRuns += value; strikerRuns += value; strikerBalls++; if (value % 2 == 1) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb }; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb } } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("$value", color = Green, fontWeight = FontWeight.Bold) }
+                                            Button(onClick = { if (!awaitingNextBatter && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  ${value} run${if (value == 1) "" else "s"}"); runs += value; if (value == 4) fours++; if (value == 6) sixes++; balls++; bowlerBalls++; if (balls % 6 == 0) overNeedsBowler = true; bowlerRuns += value; strikerRuns += value; strikerBalls++; if (value % 2 == 1) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb }; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb } } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 0.dp, vertical = 8.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("$value", color = Green, fontWeight = FontWeight.Bold) }
                                         }
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  WD"); runs++; extras++; bowlerRuns++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("WIDE", color = Green, fontSize = 10.sp) }
-                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  NB"); runs++; extras++; bowlerRuns++; strikerBalls++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("NO BALL", color = Green, fontSize = 10.sp) }
-                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  B"); runs++; extras++; balls++; bowlerBalls++; strikerBalls++; if (balls % 6 == 0) overNeedsBowler = true; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb } } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("BYE", color = Green, fontSize = 10.sp) }
-                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; balls++; bowlerBalls++; strikerBalls++; if (balls % 6 == 0) overNeedsBowler = true; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb } } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("LEG-BYE", color = Green, fontSize = 10.sp) }
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  WD"); runs++; extras++; wides++; bowlerRuns++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("WIDE", color = Green, fontSize = 10.sp) }
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  NB"); runs++; extras++; noBalls++; bowlerRuns++; strikerBalls++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("NO BALL", color = Green, fontSize = 10.sp) }
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  B"); runs++; extras++; byes++; balls++; bowlerBalls++; strikerBalls++; if (balls % 6 == 0) overNeedsBowler = true; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb } } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("BYE", color = Green, fontSize = 10.sp) }
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; legByes++; balls++; bowlerBalls++; strikerBalls++; if (balls % 6 == 0) overNeedsBowler = true; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb } } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("LEG-BYE", color = Green, fontSize = 10.sp) }
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                         Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { selectedDismissal = "Bowled"; showDismissalDialog = true } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3261E))) { Text("WICKET") }
@@ -452,7 +477,8 @@ fun CricketHome() {
                         Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("LIVE PLAYER FIGURES", color = Green, fontWeight = FontWeight.Bold)
-                                Text("EXTRAS  $extras", color = Color.LightGray, fontSize = 12.sp)
+                                Text("BOUNDARIES  4s: $fours  •  6s: $sixes", color = Color.White, fontSize = 12.sp)
+                                Text("EXTRAS  $extras  •  WD $wides  •  NB $noBalls  •  B $byes  •  LB $legByes", color = Color.LightGray, fontSize = 12.sp)
                                 if (ballByBallLog.isNotEmpty()) {
                                     Text("BALL-BY-BALL", color = Green, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                                     ballByBallLog.takeLast(12).asReversed().forEach { delivery -> Text(delivery, color = Color.White, fontSize = 11.sp) }
@@ -528,7 +554,7 @@ fun CricketHome() {
                             }
                         }
                         item {
-                            OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; firstStrikerName = ""; firstStrikerRuns = 0; firstStrikerBalls = 0; firstNonStrikerName = ""; firstNonStrikerRuns = 0; firstNonStrikerBalls = 0; firstBowlerName = ""; firstBowlerRuns = 0; firstBowlerWickets = 0; firstBowlerBalls = 0; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
+                            OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; fours = 0; sixes = 0; wides = 0; noBalls = 0; byes = 0; legByes = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; firstStrikerName = ""; firstStrikerRuns = 0; firstStrikerBalls = 0; firstNonStrikerName = ""; firstNonStrikerRuns = 0; firstNonStrikerBalls = 0; firstBowlerName = ""; firstBowlerRuns = 0; firstBowlerWickets = 0; firstBowlerBalls = 0; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
                         }
                     }
                     item {
@@ -549,6 +575,8 @@ fun CricketHome() {
                                 firstBowlerWickets = bowlerWickets
                                 firstBowlerBalls = bowlerBalls
                                 firstInningsBowlerFigures = (inningsBowlerFigures + if (bowlerName.isNotBlank()) listOf("$bowlerName: ${bowlerBalls / 6}.${bowlerBalls % 6} overs, $bowlerRuns runs, $bowlerWickets wickets") else emptyList()).joinToString("\\n")
+                                firstInningsExtras = extras; firstInningsFours = fours; firstInningsSixes = sixes
+                                firstInningsWides = wides; firstInningsNoBalls = noBalls; firstInningsByes = byes; firstInningsLegByes = legByes
                                 inningsBowlerFigures.clear()
                                 overNeedsBowler = false
                                 ballByBallLog.add("— INNINGS 2 —")
@@ -578,7 +606,7 @@ fun CricketHome() {
                                     val result = if (innings == 2 && runs >= target) "$team won by ${10 - wickets} wickets" else if (innings == 2 && runs < target && (wickets >= 10 || balls >= (oversLimit.toIntOrNull() ?: 20) * 6)) "$firstInningsTeam won by ${firstInningsRuns - runs} runs" else "Innings in progress"
                                     val scoreText = if (innings == 2) "$firstInningsRuns/$firstInningsWickets ($firstInningsOvers) & $runs/$wickets ($overs) • $result" else "$runs/$wickets"
                                     val currentBowlerLines = inningsBowlerFigures.toList() + if (bowlerName.isNotBlank()) listOf("$bowlerName: ${bowlerBalls / 6}.${bowlerBalls % 6} overs, $bowlerRuns runs, $bowlerWickets wickets") else emptyList()
-                                    val detailsText = "INNINGS 1: $firstInningsTeam $firstInningsRuns/$firstInningsWickets ($firstInningsOvers)\\nBATTERS\\n$firstStrikerName: $firstStrikerRuns runs off $firstStrikerBalls balls\\n$firstNonStrikerName: $firstNonStrikerRuns runs off $firstNonStrikerBalls balls\\nBOWLERS\\n$firstInningsBowlerFigures\\nINNINGS 2: $team $runs/$wickets ($overs)\\nBATTERS\\n$strikerName: $strikerRuns runs off $strikerBalls balls\\n$nonStrikerName: $nonStrikerRuns runs off $nonStrikerBalls balls\\nBOWLERS\\n${currentBowlerLines.joinToString("\\n")}\\nLAST WICKET: ${lastDismissal.ifBlank { "Not recorded" }}\\nBALL-BY-BALL\n${ballByBallLog.joinToString("\\n")}\nEXTRAS: $extras"
+                                    val detailsText = "INNINGS 1: $firstInningsTeam $firstInningsRuns/$firstInningsWickets ($firstInningsOvers)\\nBOUNDARIES: 4s $firstInningsFours, 6s $firstInningsSixes\\nEXTRAS: $firstInningsExtras (WD $firstInningsWides, NB $firstInningsNoBalls, B $firstInningsByes, LB $firstInningsLegByes)\\nBATTERS\\n$firstStrikerName: $firstStrikerRuns runs off $firstStrikerBalls balls\\n$firstNonStrikerName: $firstNonStrikerRuns runs off $firstNonStrikerBalls balls\\nBOWLERS\\n$firstInningsBowlerFigures\\nINNINGS 2: $team $runs/$wickets ($overs)\\nBOUNDARIES: 4s $fours, 6s $sixes\\nEXTRAS: $extras (WD $wides, NB $noBalls, B $byes, LB $legByes)\\nBATTERS\\n$strikerName: $strikerRuns runs off $strikerBalls balls\\n$nonStrikerName: $nonStrikerRuns runs off $nonStrikerBalls balls\\nBOWLERS\\n${currentBowlerLines.joinToString("\\n")}\\nLAST WICKET: ${lastDismissal.ifBlank { "Not recorded" }}\\nBALL-BY-BALL\n${ballByBallLog.joinToString("\\n")}\nEXTRAS: $extras"
                                     val record = MatchRecord(date, firstInningsTeam.ifBlank { team }, opponentTeam, scoreText, overs, "$tossWinner chose to $tossDecision", detailsText)
                                     matchHistory.add(0, record)
                                     val battingFigures = mutableListOf<Triple<String, Int, Int>>()
@@ -589,7 +617,7 @@ fun CricketHome() {
                                     battingFigures.add(Triple(strikerName, strikerRuns, strikerBalls))
                                     battingFigures.add(Triple(nonStrikerName, nonStrikerRuns, nonStrikerBalls))
                                     val matchPlayerNames = mutableSetOf<String>()
-                                    battingFigures.filter { it.first.isNotBlank() }.groupBy { it.first.lowercase(Locale.ROOT) }.forEach { (_, entries) ->
+                                    battingFigures.filter { it.first.isNotBlank() && players.any { p -> p.first.equals(it.first, true) } }.groupBy { it.first.lowercase(Locale.ROOT) }.forEach { (_, entries) ->
                                         val name = entries.first().first
                                         val index = careerStats.indexOfFirst { it.name.equals(name, true) }
                                         val role = players.firstOrNull { it.first.equals(name, true) }?.second ?: "Player"
@@ -600,7 +628,7 @@ fun CricketHome() {
                                     val bowlingFigures = mutableListOf<Triple<String, Int, Pair<Int, Int>>>()
                                     if (innings == 2) bowlingFigures.add(Triple(firstBowlerName, firstBowlerRuns, firstBowlerWickets to firstBowlerBalls))
                                     bowlingFigures.add(Triple(bowlerName, bowlerRuns, bowlerWickets to bowlerBalls))
-                                    bowlingFigures.filter { it.first.isNotBlank() }.groupBy { it.first.lowercase(Locale.ROOT) }.forEach { (_, entries) ->
+                                    bowlingFigures.filter { it.first.isNotBlank() && players.any { p -> p.first.equals(it.first, true) } }.groupBy { it.first.lowercase(Locale.ROOT) }.forEach { (_, entries) ->
                                         val name = entries.first().first
                                         val index = careerStats.indexOfFirst { it.name.equals(name, true) }
                                         val role = players.firstOrNull { it.first.equals(name, true) }?.second ?: "Bowler"
@@ -619,7 +647,7 @@ fun CricketHome() {
                                 Text(if (matchSaved) "MATCH SAVED" else "SAVE MATCH TO HISTORY", color = Dark, fontWeight = FontWeight.Bold)
                             }
                         }
-                        OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; firstStrikerName = ""; firstStrikerRuns = 0; firstStrikerBalls = 0; firstNonStrikerName = ""; firstNonStrikerRuns = 0; firstNonStrikerBalls = 0; firstBowlerName = ""; firstBowlerRuns = 0; firstBowlerWickets = 0; firstBowlerBalls = 0; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; inningsBowlerFigures.clear(); firstInningsBowlerFigures = ""; overNeedsBowler = false; started = false; matchSaved = false }, modifier = Modifier.fillMaxWidth()) { Text("NEW MATCH / RESET") }
+                        OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; fours = 0; sixes = 0; wides = 0; noBalls = 0; byes = 0; legByes = 0; firstInningsExtras = 0; firstInningsFours = 0; firstInningsSixes = 0; firstInningsWides = 0; firstInningsNoBalls = 0; firstInningsByes = 0; firstInningsLegByes = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; firstStrikerName = ""; firstStrikerRuns = 0; firstStrikerBalls = 0; firstNonStrikerName = ""; firstNonStrikerRuns = 0; firstNonStrikerBalls = 0; firstBowlerName = ""; firstBowlerRuns = 0; firstBowlerWickets = 0; firstBowlerBalls = 0; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; inningsBowlerFigures.clear(); firstInningsBowlerFigures = ""; overNeedsBowler = false; started = false; matchSaved = false }, modifier = Modifier.fillMaxWidth()) { Text("NEW MATCH / RESET") }
                     }
                     item { Text("Match history aur player career records isi device par save hote hain. App data clear ya app uninstall karne se pehle backup ka dhyan rakhein.", color = Color.LightGray, fontSize = 12.sp) }
                 }
@@ -837,11 +865,15 @@ fun MatchScorecardDetails(details: String) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(title + "  •  INNINGS SCORECARD", color = Green, fontWeight = FontWeight.Black, fontSize = 13.sp)
                 Text(summary, color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black)
+                boundariesLine?.let { Text(it, color = Green, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                extrasLine?.let { Text(it, color = Color.LightGray, fontSize = 12.sp) }
                 val start = lines.indexOf(header)
                 val end = lines.indexOfFirstFrom(start + 1) { it.startsWith("INNINGS ") }.let { if (it < 0) lines.size else it }
                 val section = lines.subList(start + 1, end)
                 val batterLines = section.dropWhile { it != "BATTERS" }.drop(1).takeWhile { it != "BOWLERS" }
-                val bowlerLines = section.dropWhile { it != "BOWLERS" }.drop(1)
+                val bowlerLines = section.dropWhile { it != "BOWLERS" }.drop(1).filter { Regex("(\\d+)\\.(\\d+) overs, (\\d+) runs, (\\d+) wickets").containsMatchIn(it) }
+                val boundariesLine = section.firstOrNull { it.startsWith("BOUNDARIES:") }
+                val extrasLine = section.firstOrNull { it.startsWith("EXTRAS:") }
                 if (batterLines.isNotEmpty()) {
                     HorizontalDivider(color = Color(0xFF34483B))
                     Text("BATTING", color = Green, fontWeight = FontWeight.Black, fontSize = 14.sp)
