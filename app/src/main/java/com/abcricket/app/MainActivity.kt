@@ -624,11 +624,7 @@ fun fieldColors() = OutlinedTextFieldDefaults.colors(
     focusedLabelColor = Green,
     unfocusedLabelColor = Color(0xFFB8C8BE),
     disabledLabelColor = Color.Gray,
-    cursorColor = Green,
-    selectionColors = TextSelectionColors(
-        handleColor = Green,
-        backgroundColor = Green.copy(alpha = 0.35f)
-    )
+    cursorColor = Green
 )
 
 @Composable
