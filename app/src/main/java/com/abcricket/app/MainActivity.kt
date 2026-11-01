@@ -157,6 +157,7 @@ fun CricketHome() {
     var bowlerBalls by remember { mutableIntStateOf(0) }
     var playerName by remember { mutableStateOf("") }
     var playerRole by remember { mutableStateOf("Batsman") }
+    val opponentPlayerNames = remember { mutableStateListOf<String>().apply { repeat(11) { add("") } } }
     var opponentPlayersText by remember { mutableStateOf("") }
     var matchSaved by remember { mutableStateOf(false) }
     val matchHistory = remember { mutableStateListOf<MatchRecord>() }
@@ -275,7 +276,15 @@ fun CricketHome() {
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(value = opponentTeam, onValueChange = { opponentTeam = it }, label = { Text("Team 2 / opponent") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
                         Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(value = opponentPlayersText, onValueChange = { value -> opponentPlayersText = value.lines().take(11).joinToString("\n") }, label = { Text("Opponent XI (one name per line, max 11)") }, minLines = 3, maxLines = 11, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        Text("OPPONENT PLAYERS", color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            opponentPlayerNames.forEachIndexed { index, playerName ->
+                                OutlinedTextField(value = playerName, onValueChange = { value ->
+                                    opponentPlayerNames[index] = value
+                                    opponentPlayersText = opponentPlayerNames.joinToString("\n")
+                                }, label = { Text("Player ${index + 1}") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                            }
+                        }
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(value = oversLimit, onValueChange = { value -> if (value.length <= 3 && value.all { it.isDigit() }) oversLimit = value }, label = { Text("Overs per innings") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
                         Spacer(Modifier.height(12.dp))
@@ -300,6 +309,20 @@ fun CricketHome() {
                         PlayerPicker("Non-striker", nonStrikerName, players, !started) { nonStrikerName = it }
                         PlayerPicker("Opening bowler", bowlerName, players, !started) { bowlerName = it }
                         Text("Toss: " + tossWinner + " elected to " + tossDecision + " | " + (oversLimit.ifBlank { "20" }) + " overs", color = Color.LightGray, fontSize = 12.sp)
+                        Button(onClick = {
+                            val configuredOvers = oversLimit.toIntOrNull() ?: 0
+                            val validTeams = team.isNotBlank() && opponentTeam.isNotBlank() && !team.equals(opponentTeam, true)
+                            val validBatters = strikerName.isBlank() || nonStrikerName.isBlank() || !strikerName.equals(nonStrikerName, true)
+                            if (validTeams && configuredOvers in 1..100 && validBatters) {
+                                if (innings == 1) {
+                                    val firstBattingTeam = if ((tossWinner == team && tossDecision == "Bat") || (tossWinner == opponentTeam && tossDecision == "Bowl")) team else opponentTeam
+                                    if (firstBattingTeam != team) { val oldTeam = team; team = opponentTeam; opponentTeam = oldTeam }
+                                }
+                                started = true
+                            }
+                        }, enabled = !started && team.isNotBlank() && opponentTeam.isNotBlank() && !team.equals(opponentTeam, true) && (oversLimit.toIntOrNull() ?: 0) in 1..100 && (strikerName.isBlank() || nonStrikerName.isBlank() || !strikerName.equals(nonStrikerName, true)), modifier = Modifier.fillMaxWidth().height(54.dp), colors = ButtonDefaults.buttonColors(containerColor = Green)) {
+                            Text("START MATCH", color = Dark, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                        }
                     }
                     item {
                         Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
