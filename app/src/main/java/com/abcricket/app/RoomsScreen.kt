@@ -35,7 +35,7 @@ private data class CricketRoom(
     val role: String
 )
 
-private object SupabaseRoomsApi {
+object SupabaseRoomsApi {
     private fun request(path: String, method: String, token: String? = null, body: JSONObject? = null, prefer: String? = null): String {
         val connection = (URL("$SUPABASE_URL$path").openConnection() as HttpURLConnection)
         try {
@@ -118,7 +118,14 @@ private object SupabaseRoomsApi {
     suspend fun joinRoom(token: String, code: String) = withContext(Dispatchers.IO) {
         request("/rest/v1/rpc/join_circle_by_code", "POST", token, JSONObject().put("p_code", code))
     }
-}
+
+    suspend fun saveMatch(token: String, circleId: String, userId: String, teamOne: String, teamTwo: String, oversLimit: Int, status: String, scorecard: JSONObject) = withContext(Dispatchers.IO) {
+        val body = JSONObject().put("circle_id", circleId).put("title", "$teamOne vs $teamTwo").put("team_one", teamOne).put("team_two", teamTwo).put("overs_limit", oversLimit.coerceIn(1, 100)).put("status", if (status == "live") "live" else "completed").put("scorecard", scorecard).put("created_by", userId)
+        val response = request("/rest/v1/room_matches", "POST", token, body, "return=representation")
+        val rows = JSONArray(response)
+        if (rows.length() == 0) throw IllegalStateException("Supabase ne match ID return nahi ki.")
+        rows.getJSONObject(0).optString("id")
+    }}
 
 @Composable
 fun RoomsScreen() {
@@ -253,7 +260,7 @@ fun RoomsScreen() {
             }
             if (rooms.isEmpty()) Text("No rooms yet.", color = Color.LightGray, fontSize = 12.sp)
             rooms.forEach { room ->
-                Card(onClick = { selectedRoom = room; roomPlayers = emptyList(); loadRoomPlayers(room) }, colors = CardDefaults.cardColors(containerColor = RoomPanel), modifier = Modifier.fillMaxWidth()) {
+                Card(onClick = { selectedRoom = room; prefs.edit().putString("selected_room_id", room.id).putString("selected_room_name", room.name).putString("selected_room_role", room.role).apply(); roomPlayers = emptyList(); loadRoomPlayers(room) }, colors = CardDefaults.cardColors(containerColor = RoomPanel), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(room.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         if (room.description.isNotBlank()) Text(room.description, color = Color.LightGray, fontSize = 12.sp)
@@ -269,7 +276,7 @@ fun RoomsScreen() {
                 val room = selectedRoom!!
                 HorizontalDivider(color = Color.DarkGray)
                 Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                    TextButton(onClick = { selectedRoom = null; roomPlayers = emptyList(); message = "" }) {
+                    TextButton(onClick = { selectedRoom = null; prefs.edit().remove("selected_room_id").remove("selected_room_name").remove("selected_room_role").apply(); roomPlayers = emptyList(); message = "" }) {
                         Text("← BACK TO ROOMS", color = RoomGreen)
                     }
                 }
