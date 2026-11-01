@@ -359,7 +359,7 @@ fun CricketHome() {
                                     if (overNeedsBowler) {
                                         InfoCard("OVER COMPLETE", "Naya over shuru karne ke liye naya bowler select karein.")
                                         PlayerPicker("NEXT OVER BOWLER", "", liveBowlingPlayers.filter { it.first != bowlerName }, true) { nextBowler ->
-                                            if (bowlerName.isNotBlank()) inningsBowlerFigures.add("\$bowlerName: \${bowlerBalls / 6}.\${bowlerBalls % 6} overs, \$bowlerRuns runs, \$bowlerWickets wickets")
+                                            if (bowlerName.isNotBlank()) inningsBowlerFigures.add("$bowlerName: ${bowlerBalls / 6}.${bowlerBalls % 6} overs, $bowlerRuns runs, $bowlerWickets wickets")
                                             bowlerName = nextBowler
                                             bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0
                                             overNeedsBowler = false
@@ -499,7 +499,7 @@ fun CricketHome() {
                                 firstBowlerRuns = bowlerRuns
                                 firstBowlerWickets = bowlerWickets
                                 firstBowlerBalls = bowlerBalls
-                                firstInningsBowlerFigures = (inningsBowlerFigures + if (bowlerName.isNotBlank()) listOf("\$bowlerName: \${bowlerBalls / 6}.\${bowlerBalls % 6} overs, \$bowlerRuns runs, \$bowlerWickets wickets") else emptyList()).joinToString("\\n")
+                                firstInningsBowlerFigures = (inningsBowlerFigures + if (bowlerName.isNotBlank()) listOf("$bowlerName: ${bowlerBalls / 6}.${bowlerBalls % 6} overs, $bowlerRuns runs, $bowlerWickets wickets") else emptyList()).joinToString("\\n")
                                 inningsBowlerFigures.clear()
                                 overNeedsBowler = false
                                 target = runs + 1
@@ -527,7 +527,9 @@ fun CricketHome() {
                                     val date = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date())
                                     val result = if (innings == 2 && runs >= target) "$team won by ${10 - wickets} wickets" else if (innings == 2 && runs < target && (wickets >= 10 || balls >= (oversLimit.toIntOrNull() ?: 20) * 6)) "$firstInningsTeam won by ${firstInningsRuns - runs} runs" else "Innings in progress"
                                     val scoreText = if (innings == 2) "$firstInningsRuns/$firstInningsWickets ($firstInningsOvers) & $runs/$wickets ($overs) • $result" else "$runs/$wickets"
-                                    val record = MatchRecord(date, firstInningsTeam.ifBlank { team }, opponentTeam, scoreText, overs, "$tossWinner chose to $tossDecision")
+                                    val currentBowlerLines = inningsBowlerFigures.toList() + if (bowlerName.isNotBlank()) listOf("$bowlerName: ${bowlerBalls / 6}.${bowlerBalls % 6} overs, $bowlerRuns runs, $bowlerWickets wickets") else emptyList()
+                                    val detailsText = "INNINGS 1: $firstInningsTeam $firstInningsRuns/$firstInningsWickets ($firstInningsOvers)\\nBOWLERS\\n$firstInningsBowlerFigures\\nINNINGS 2: $team $runs/$wickets ($overs)\\nBATTERS\\n$strikerName: $strikerRuns runs off $strikerBalls balls\\n$nonStrikerName: $nonStrikerRuns runs off $nonStrikerBalls balls\\nBOWLERS\\n${currentBowlerLines.joinToString("\\n")}"
+                                    val record = MatchRecord(date, firstInningsTeam.ifBlank { team }, opponentTeam, scoreText, overs, "$tossWinner chose to $tossDecision", detailsText)
                                     matchHistory.add(0, record)
                                     val battingFigures = mutableListOf<Triple<String, Int, Int>>()
                                     if (innings == 2) {
@@ -646,6 +648,7 @@ fun CricketHome() {
                                     Text(match.team + " vs " + match.opponent, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
                                     Text(match.team + "  " + match.score, color = Green, fontSize = 24.sp, fontWeight = FontWeight.Black)
                                     Text("Overs: " + match.overs + "  |  " + match.toss, color = Color.LightGray, fontSize = 12.sp)
+                                    if (match.details.isNotBlank()) Text(match.details, color = Color.White, fontSize = 12.sp)
                                     if (match.details.isNotBlank()) Text(match.details, color = Color.White, fontSize = 12.sp)
                                 }
                             }
