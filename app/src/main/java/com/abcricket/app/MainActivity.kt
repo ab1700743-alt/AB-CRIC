@@ -325,6 +325,7 @@ fun CricketHome() {
                             Text("START MATCH", color = Dark, fontWeight = FontWeight.Black, fontSize = 16.sp)
                         }
                     }
+                    }
                     if (started) {
                         item {
                             Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
