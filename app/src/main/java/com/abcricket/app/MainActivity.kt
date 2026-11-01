@@ -156,6 +156,8 @@ fun CricketHome() {
     val players = remember { mutableStateListOf<Pair<String, String>>() }
     val careerStats = remember { mutableStateListOf<PlayerCareer>() }
     val context = LocalContext.current
+    val cloudScope = rememberCoroutineScope()
+    var cloudMessage by remember { mutableStateOf("") }
     val preferences = remember { context.getSharedPreferences("ab_cricket_data", android.content.Context.MODE_PRIVATE) }
     LaunchedEffect(Unit) {
         team = preferences.getString("team", team) ?: team
@@ -458,6 +460,23 @@ fun CricketHome() {
                                     val json = JSONArray()
                                     matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss)) }
                                     preferences.edit().putString("matchHistory", json.toString()).apply()
+                                    val roomPrefs = context.getSharedPreferences("ab_cricket_rooms", android.content.Context.MODE_PRIVATE)
+                                    val cloudToken = roomPrefs.getString("access_token", "").orEmpty()
+                                    val cloudUserId = roomPrefs.getString("user_id", "").orEmpty()
+                                    val cloudRoomId = roomPrefs.getString("selected_room_id", "").orEmpty()
+                                    val cloudRoomRole = roomPrefs.getString("selected_room_role", "").orEmpty()
+                                    if (cloudRoomId.isNotBlank() && cloudToken.isNotBlank() && cloudUserId.isNotBlank() && (cloudRoomRole == "owner" || cloudRoomRole == "admin")) {
+                                        val scorecard = JSONObject().put("date", date).put("team", record.team).put("opponent", record.opponent).put("score", scoreText).put("overs", overs).put("toss", record.toss).put("innings", innings).put("runs", runs).put("wickets", wickets).put("balls", balls).put("extras", extras).put("first_innings_runs", firstInningsRuns).put("first_innings_wickets", firstInningsWickets).put("first_innings_overs", firstInningsOvers).put("striker", strikerName).put("non_striker", nonStrikerName).put("bowler", bowlerName).put("result", result)
+                                        cloudMessage = "Cloud par save ho raha hai..."
+                                        cloudScope.launch {
+                                            try {
+                                                SupabaseRoomsApi.saveMatch(cloudToken, cloudRoomId, cloudUserId, record.team, record.opponent, oversLimit.toIntOrNull() ?: 20, if (result == "Innings in progress") "live" else "completed", scorecard)
+                                                cloudMessage = "Match room cloud par bhi save ho gaya."
+                                            } catch (e: Exception) { cloudMessage = "Cloud save nahi hua: " + (e.message ?: "Unknown error") }
+                                        }
+                                    } else {
+                                        cloudMessage = if (cloudRoomId.isBlank()) "Local save ho gaya. Cloud save ke liye pehle Rooms mein room select karo." else "Local save ho gaya. Cloud saving sirf room owner/admin kar sakta hai."
+                                    }
                                     matchSaved = true
                                     started = false
                                 }
@@ -467,7 +486,7 @@ fun CricketHome() {
                         }
                         OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; firstStrikerName = ""; firstStrikerRuns = 0; firstStrikerBalls = 0; firstNonStrikerName = ""; firstNonStrikerRuns = 0; firstNonStrikerBalls = 0; firstBowlerName = ""; firstBowlerRuns = 0; firstBowlerWickets = 0; firstBowlerBalls = 0; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false; matchSaved = false }, modifier = Modifier.fillMaxWidth()) { Text("NEW MATCH / RESET") }
                     }
-                    item { Text("Saved scorecards are stored on this device. Detailed player-by-player statistics and cloud sync are future upgrades.", color = Color.LightGray, fontSize = 12.sp) }
+                    item { Text("Scorecards device par save hote hain. Selected room ke owner/admin cloud par bhi save kar sakte hain.", color = Color.LightGray, fontSize = 12.sp); if (cloudMessage.isNotBlank()) Text(cloudMessage, color = if (cloudMessage.contains("nahi")) Color(0xFFFF8A80) else Green, fontSize = 12.sp) }
                 }
                 "Players" -> {
                     item { InfoCard("PLAYER MANAGEMENT", "Add squad members and assign each player a role.") }
