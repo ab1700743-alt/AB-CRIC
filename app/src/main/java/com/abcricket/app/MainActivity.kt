@@ -274,6 +274,8 @@ fun CricketHome() {
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(value = opponentTeam, onValueChange = { opponentTeam = it }, label = { Text("Team 2 / opponent") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
                         Spacer(Modifier.height(8.dp))
+                        OutlinedTextField(value = opponentPlayersText, onValueChange = { value -> opponentPlayersText = value.lines().take(11).joinToString("\n") }, label = { Text("Opponent XI (one name per line, max 11)") }, minLines = 3, maxLines = 11, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
+                        Spacer(Modifier.height(8.dp))
                         OutlinedTextField(value = oversLimit, onValueChange = { value -> if (value.length <= 3 && value.all { it.isDigit() }) oversLimit = value }, label = { Text("Overs per innings") }, singleLine = true, enabled = !started, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
                         Spacer(Modifier.height(12.dp))
                         Text("TOSS WINNER", color = Color.LightGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -476,7 +478,7 @@ fun CricketHome() {
                     item { Text("Match history aur player career records isi device par save hote hain. App data clear ya app uninstall karne se pehle backup ka dhyan rakhein.", color = Color.LightGray, fontSize = 12.sp) }
                 }
                 "Players" -> {
-                    item { InfoCard("PLAYER MANAGEMENT", "Add squad members and assign each player a role.") }
+                    item { InfoCard("YOUR PERMANENT XI", "Yahan sirf apni team ke 11 players add karein. Inhi ke profiles, career stats aur rankings permanently save honge. Opponent XI match setup mein alag enter hoti hai.") }
                     item {
                         OutlinedTextField(value = playerName, onValueChange = { playerName = it }, label = { Text("Player name") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
                         Spacer(Modifier.height(10.dp))
@@ -507,7 +509,7 @@ fun CricketHome() {
                         }
                     }
                     if (players.isEmpty()) {
-                        item { InfoCard("EMPTY SQUAD", "Add your first player above.") }
+                        item { InfoCard("EMPTY SQUAD", "Add your first player above. Your permanent squad can contain up to 11 players.") }
                     } else {
                         items(players.size) { index ->
                             val player = players[index]
