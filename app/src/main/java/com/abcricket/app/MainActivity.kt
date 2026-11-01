@@ -674,7 +674,6 @@ fun PlayerPicker(label: String, selectedPlayer: String, players: List<Pair<Strin
     }
 }
 
-@Composable
 fun rankingPoints(p: PlayerCareer): Int {
     val strikeRate = if (p.balls > 0) p.runs * 100.0 / p.balls else 0.0
     val overs = p.bowlingBalls / 6.0
@@ -684,6 +683,7 @@ fun rankingPoints(p: PlayerCareer): Int {
     return p.runs + p.wickets * 20 + battingBonus + bowlingBonus
 }
 
+@Composable
 fun ABHomeDashboard(team:String, opponent:String, runs:Int, wickets:Int, overs:String, started:Boolean, careerStats:List<PlayerCareer>, onMatches:()->Unit, onPlayers:()->Unit, onRankings:()->Unit, onHistory:()->Unit, onAccount:()->Unit) {
     Column(Modifier.fillMaxWidth(), verticalArrangement=Arrangement.spacedBy(17.dp)) {
         Row(verticalAlignment=Alignment.CenterVertically) {
