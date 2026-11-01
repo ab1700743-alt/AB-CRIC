@@ -128,7 +128,7 @@ object SupabaseRoomsApi {
     }}
 
 @Composable
-fun RoomsScreen() {
+fun RoomsScreen(onRoomEntered: () -> Unit = {}) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember { context.getSharedPreferences("ab_cricket_rooms", Context.MODE_PRIVATE) }
     val scope = rememberCoroutineScope()
@@ -281,6 +281,8 @@ fun RoomsScreen() {
                     }
                 }
                 Text(room.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                if (room.role == "owner" || room.role == "admin") Text("INVITATION CODE: ${room.inviteCode}", color = RoomGreen, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Button(onClick = onRoomEntered, modifier = Modifier.fillMaxWidth()) { Text("ENTER THIS ROOM") }
                 Text("ROOM SQUAD", color = RoomGreen, fontWeight = FontWeight.Bold)
                 if (room.role == "owner" || room.role == "admin") {
                     OutlinedTextField(value = newPlayerName, onValueChange = { newPlayerName = it }, label = { Text("Player name") }, singleLine = true, modifier = Modifier.fillMaxWidth(), colors = fieldColors())
