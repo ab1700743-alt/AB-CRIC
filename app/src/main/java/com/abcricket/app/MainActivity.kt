@@ -257,6 +257,7 @@ fun CricketHome() {
                 },
                 confirmButton = {
                     TextButton(onClick = {
+                        ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  WICKET — $selectedDismissal")
                         balls++; bowlerBalls++; strikerBalls++
                         val retiredHurt = selectedDismissal == "Retired hurt"
                         if (!retiredHurt) {
@@ -423,7 +424,7 @@ fun CricketHome() {
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                         Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { selectedDismissal = "Bowled"; showDismissalDialog = true } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3261E))) { Text("WICKET") }
-                                        Button(onClick = { if (!awaitingNextBatter && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  WICKET — $selectedDismissal"); balls++; bowlerBalls++; strikerBalls++; if (balls % 6 == 0) { overNeedsBowler = true; val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb } } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("DOT BALL", color = Color.White) }
+                                        Button(onClick = { if (!awaitingNextBatter && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10 && (innings == 1 || runs < target)) { ballByBallLog.add("${balls / 6}.${balls % 6 + 1}  $bowlerName to $strikerName  0"); balls++; bowlerBalls++; strikerBalls++; if (balls % 6 == 0) { overNeedsBowler = true; val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old; val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr; val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb } } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("DOT BALL", color = Color.White) }
                                     }
                                     if (awaitingNextBatter && wickets < 10) {
                                         Text("WICKET FALLEN — SELECT NEXT BATTER", color = Green, fontWeight = FontWeight.Bold, fontSize = 11.sp)
