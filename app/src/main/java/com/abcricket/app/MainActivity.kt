@@ -585,7 +585,7 @@ fun CricketHome() {
                                 team = opponentTeam
                                 opponentTeam = oldTeam
                                 innings = 2
-                                runs = 0; wickets = 0; balls = 0; extras = 0
+                                runs = 0; wickets = 0; balls = 0; extras = 0; fours = 0; sixes = 0; wides = 0; noBalls = 0; byes = 0; legByes = 0
                                 strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0
                                 bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0
                                 started = false; matchSaved = false
