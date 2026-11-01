@@ -230,13 +230,14 @@ fun CricketHome() {
         containerColor = Dark,
         bottomBar = {
             NavigationBar(containerColor = Panel) {
-                listOf("Home", "Matches", "Players", "Rankings", "History").forEach { item ->
+                listOf("Home", "Matches", "Players", "Stats", "Rankings", "History").forEach { item ->
                     NavigationBarItem(
                         selected = selected == item,
                         onClick = { selected = item },
                         icon = { Icon(when(item) {
                             "Matches" -> Icons.Default.SportsCricket
                             "Players" -> Icons.Default.People
+                            "Stats" -> Icons.Default.BarChart
                             "Rankings" -> Icons.Default.EmojiEvents
                             "History" -> Icons.Default.History
                             else -> Icons.Default.Home
@@ -572,6 +573,56 @@ fun CricketHome() {
                         }
                     }
                 }
+                "Stats" -> {
+                    item { InfoCard("PLAYER PERFORMANCE CENTRE", "Har player ka career record yahan dekhein. Stats saved match records se calculate hote hain.") }
+                    item {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            StatTile("PLAYERS", players.size.toString(), Modifier.weight(1f))
+                            StatTile("MATCHES", matchHistory.size.toString(), Modifier.weight(1f))
+                            StatTile("TRACKED", careerStats.size.toString(), Modifier.weight(1f))
+                        }
+                    }
+                    val profiles = (players.map { it.first } + careerStats.map { it.name }).distinctBy { it.lowercase(Locale.ROOT) }
+                    if (profiles.isEmpty()) item { InfoCard("NO PLAYER DATA", "Players section mein squad add karein aur match score karein.") }
+                    profiles.forEach { name ->
+                        val p = careerStats.firstOrNull { it.name.equals(name, true) } ?: PlayerCareer(name, players.firstOrNull { it.first.equals(name, true) }?.second ?: "Player")
+                        val average = if (p.matches > 0 && p.runs > 0) p.runs.toDouble() / p.matches else 0.0
+                        val strikeRate = if (p.balls > 0) p.runs * 100.0 / p.balls else 0.0
+                        val economy = if (p.bowlingBalls > 0) p.bowlingRuns * 6.0 / p.bowlingBalls else 0.0
+                        item {
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.AccountCircle, null, tint = Green)
+                                        Spacer(Modifier.width(9.dp))
+                                        Column(Modifier.weight(1f)) {
+                                            Text(p.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                                            Text(p.role, color = Color.LightGray, fontSize = 11.sp)
+                                        }
+                                        Text("#${careerStats.sortedByDescending { rankingPoints(it) }.indexOfFirst { it.name.equals(name, true) }.let { if (it < 0) "—" else it + 1 }}", color = Green, fontWeight = FontWeight.Black)
+                                    }
+                                    HorizontalDivider(color = Color.DarkGray)
+                                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                        StatTile("MATCHES", p.matches.toString(), Modifier.weight(1f))
+                                        StatTile("RUNS", p.runs.toString(), Modifier.weight(1f))
+                                        StatTile("WICKETS", p.wickets.toString(), Modifier.weight(1f))
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                        StatTile("AVERAGE*", String.format(Locale.getDefault(), "%.2f", average), Modifier.weight(1f))
+                                        StatTile("STRIKE RATE", String.format(Locale.getDefault(), "%.2f", strikeRate), Modifier.weight(1f))
+                                    }
+                                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                                        StatTile("BOWLING", "${p.bowlingBalls / 6}.${p.bowlingBalls % 6} ov", Modifier.weight(1f))
+                                        StatTile("ECONOMY", if (p.bowlingBalls > 0) String.format(Locale.getDefault(), "%.2f", economy) else "—", Modifier.weight(1f))
+                                    }
+                                    Text("Bowling runs: ${p.bowlingRuns} • Ranking points: ${rankingPoints(p)}", color = Color.LightGray, fontSize = 11.sp)
+                                    Text("Wins, fours, sixes, catches aur dismissals abhi scorer mein record nahi hote; inhein numbers ki shakal mein show nahi kiya ja raha.", color = Color(0xFFFFD180), fontSize = 10.sp)
+                                }
+                            }
+                        }
+                    }
+                    item { Text("*Average filhaal runs per recorded appearance hai; official batting average ke liye dismissals ka record zaroori hai.", color = Color.Gray, fontSize = 10.sp) }
+                }
                 "Rankings" -> {
                     val topBatters = careerStats.sortedByDescending { rankingPoints(it) }
                     val topBowlers = careerStats.filter { it.bowlingBalls > 0 || it.wickets > 0 }.sortedWith(compareByDescending<PlayerCareer> { it.wickets }.thenBy { if (it.bowlingBalls == 0) Double.MAX_VALUE else it.bowlingRuns.toDouble() / (it.bowlingBalls / 6.0) })
@@ -595,6 +646,16 @@ fun CricketHome() {
                 InfoCard("ESTABLISHED BY", "Syed Abdul Basit")
             }
             item { Spacer(Modifier.height(12.dp)) }
+        }
+    }
+}
+
+@Composable
+fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier, colors = CardDefaults.cardColors(containerColor = Color(0xFF0B1711)), shape = RoundedCornerShape(10.dp)) {
+        Column(Modifier.padding(horizontal = 9.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(label, color = Color.LightGray, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+            Text(value, color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Black)
         }
     }
 }
