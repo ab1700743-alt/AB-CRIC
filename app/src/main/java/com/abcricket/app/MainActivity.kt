@@ -38,10 +38,23 @@ data class PlayerCareer(val name: String, val role: String, val matches: Int = 0
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { ABTheme { var showSplash by remember { mutableStateOf(true) }; if (showSplash) ABLaunchScreen { showSplash = false } else CricketHome() } }
+        setContent { ABTheme { var showSplash by remember { mutableStateOf(true) }; if (showSplash) ABLaunchScreen { showSplash = false } else CricketEntry() } }
     }
 }
 
+
+@Composable
+fun CricketEntry() {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("ab_cricket_rooms", android.content.Context.MODE_PRIVATE) }
+    var enteredRoom by remember {
+        mutableStateOf(
+            prefs.getString("access_token", "").orEmpty().isNotBlank() &&
+            prefs.getString("selected_room_id", "").orEmpty().isNotBlank()
+        )
+    }
+    if (enteredRoom) CricketHome() else RoomsScreen(onRoomEntered = { enteredRoom = true })
+}
 
 @Composable
 fun ABLaunchScreen(onFinished: () -> Unit) {
