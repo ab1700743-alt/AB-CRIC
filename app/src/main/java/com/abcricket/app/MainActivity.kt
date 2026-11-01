@@ -256,11 +256,20 @@ fun CricketHome() {
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        wickets++; balls++; bowlerBalls++; strikerBalls++
-                        if (selectedDismissal in listOf("Bowled", "Caught", "LBW", "Stumped", "Hit wicket")) bowlerWickets++
-                        lastDismissal = "$strikerName — $selectedDismissal"
-                        awaitingNextBatter = wickets < 10 && liveBattingPlayers.any { it.first != strikerName && it.first != nonStrikerName }
-                        if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old }
+                        balls++; bowlerBalls++; strikerBalls++
+                        val retiredHurt = selectedDismissal == "Retired hurt"
+                        if (!retiredHurt) {
+                            wickets++
+                            if (selectedDismissal in listOf("Bowled", "Caught", "LBW", "Stumped", "Hit wicket")) bowlerWickets++
+                        }
+                        lastDismissal = "$strikerName — " + if (retiredHurt) "Retired hurt (not out)" else selectedDismissal
+                        awaitingNextBatter = liveBattingPlayers.any { it.first != strikerName && it.first != nonStrikerName } && (retiredHurt || wickets < 10)
+                        if (balls % 6 == 0) {
+                            overNeedsBowler = true
+                            val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old
+                            val rr = strikerRuns; strikerRuns = nonStrikerRuns; nonStrikerRuns = rr
+                            val bb = strikerBalls; strikerBalls = nonStrikerBalls; nonStrikerBalls = bb
+                        }
                         showDismissalDialog = false
                     }) { Text("CONFIRM WICKET", color = Green) }
                 },
