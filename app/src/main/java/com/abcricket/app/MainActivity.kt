@@ -165,6 +165,7 @@ fun CricketHome() {
     var opponentPlayersText by remember { mutableStateOf("") }
     var matchSaved by remember { mutableStateOf(false) }
     val matchHistory = remember { mutableStateListOf<MatchRecord>() }
+    var selectedHistoryMatch by remember { mutableStateOf<MatchRecord?>(null) }
     val players = remember { mutableStateListOf<Pair<String, String>>() }
     val careerStats = remember { mutableStateListOf<PlayerCareer>() }
     val context = LocalContext.current
@@ -627,13 +628,23 @@ fun CricketHome() {
                     item { Text("Squad members are saved on this device and remain available when you reopen the app.", color = Color.LightGray, fontSize = 11.sp) }
                 }
                 "History" -> {
-                    item { InfoCard("MATCH HISTORY", "Your saved match scorecards appear here.") }
-                    if (matchHistory.isEmpty()) {
-                        item { InfoCard("NO SAVED MATCHES", "Complete some scoring and tap Save Match to keep its scorecard here.") }
+                    val openedMatch = selectedHistoryMatch
+                    if (openedMatch != null) {
+                        item {
+                            TextButton(onClick = { selectedHistoryMatch = null }) { Text("← BACK TO MATCH HISTORY", color = Green) }
+                            Text(openedMatch.team + " vs " + openedMatch.opponent, color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Black)
+                            Text(openedMatch.date + "  •  " + openedMatch.toss, color = Color.LightGray, fontSize = 11.sp)
+                            Text(openedMatch.score, color = Green, fontSize = 29.sp, fontWeight = FontWeight.Black)
+                            Text("Overs: " + openedMatch.overs, color = Color.LightGray, fontSize = 12.sp)
+                            HorizontalDivider(color = Green)
+                            MatchScorecardDetails(openedMatch.details)
+                        }
                     } else {
+                        item { InfoCard("MATCH HISTORY", "Kisi match par tap karein aur uska complete available scorecard dekhein.") }
+                        if (matchHistory.isEmpty()) item { InfoCard("NO SAVED MATCHES", "Scoring ke baad Save Match karein. Scorecard yahan save hoga.") }
                         items(matchHistory.size) { index ->
                             val match = matchHistory[index]
-                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
+                            Card(onClick = { selectedHistoryMatch = match }, colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
                                 Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(match.date, color = Green, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -641,15 +652,13 @@ fun CricketHome() {
                                         IconButton(onClick = {
                                             matchHistory.removeAt(index)
                                             val json = JSONArray()
-                                            matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss)) }
+                                            matchHistory.forEach { m -> json.put(JSONObject().put("date", m.date).put("team", m.team).put("opponent", m.opponent).put("score", m.score).put("overs", m.overs).put("toss", m.toss).put("details", m.details)) }
                                             preferences.edit().putString("matchHistory", json.toString()).apply()
                                         }) { Icon(Icons.Default.DeleteOutline, contentDescription = "Delete scorecard", tint = Color(0xFFE57373)) }
                                     }
                                     Text(match.team + " vs " + match.opponent, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 17.sp)
                                     Text(match.team + "  " + match.score, color = Green, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                                    Text("Overs: " + match.overs + "  |  " + match.toss, color = Color.LightGray, fontSize = 12.sp)
-                                    if (match.details.isNotBlank()) Text(match.details, color = Color.White, fontSize = 12.sp)
-                                    if (match.details.isNotBlank()) Text(match.details, color = Color.White, fontSize = 12.sp)
+                                    Text("Overs: " + match.overs + "  |  Tap to view scorecard", color = Color.LightGray, fontSize = 12.sp)
                                 }
                             }
                         }
@@ -706,18 +715,49 @@ fun CricketHome() {
                     item { Text("*Average filhaal runs per recorded appearance hai; official batting average ke liye dismissals ka record zaroori hai.", color = Color.Gray, fontSize = 10.sp) }
                 }
                 "Rankings" -> {
-                    val topBatters = careerStats.sortedByDescending { rankingPoints(it) }
-                    val topBowlers = careerStats.filter { it.bowlingBalls > 0 || it.wickets > 0 }.sortedWith(compareByDescending<PlayerCareer> { it.wickets }.thenBy { if (it.bowlingBalls == 0) Double.MAX_VALUE else it.bowlingRuns.toDouble() / (it.bowlingBalls / 6.0) })
-                    item { InfoCard("AUTOMATIC LEADERBOARD", "Points = runs + 20 per wicket + batting strike-rate bonus + bowling economy bonus • ${careerStats.size} players tracked") }
+                    val topBatters = careerStats.filter { it.balls > 0 || it.runs > 0 }.sortedWith(compareByDescending<PlayerCareer> { it.runs * 100.0 / (if (it.balls == 0) 1 else it.balls) }.thenByDescending { it.runs })
+                    val topBowlers = careerStats.filter { it.bowlingBalls > 0 || it.wickets > 0 }.sortedWith(compareByDescending<PlayerCareer> { it.wickets }.thenBy { if (it.bowlingBalls == 0) Double.MAX_VALUE else it.bowlingRuns * 6.0 / it.bowlingBalls }.thenByDescending { it.bowlingBalls })
+                    item { InfoCard("SEPARATE LEADERBOARDS", "Batting aur bowling ki rankings alag criteria par calculate hoti hain.") }
                     item {
-                        Text("OVERALL PLAYER RANKING", color = Green, fontWeight = FontWeight.Bold)
-                        if (topBatters.isEmpty()) InfoCard("NO BATTING RECORDS", "Save a match with selected batters to start the rankings.")
-                        topBatters.forEachIndexed { index, p -> InfoCard("#${index + 1} ${p.name}", "${rankingPoints(p)} points • ${p.runs} runs • ${p.wickets} wickets • SR ${if (p.balls == 0) "0.0" else String.format(Locale.getDefault(), "%.1f", p.runs * 100.0 / p.balls)}") }
+                        Text("🏏  BATTER RANKINGS", color = Green, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                        Text("Rank  •  Runs  •  Balls  •  Strike Rate", color = Color.LightGray, fontSize = 11.sp)
+                    }
+                    if (topBatters.isEmpty()) item { InfoCard("NO BATTING RECORDS", "Batting figures save hone par batters yahan nazar aayenge.") }
+                    topBatters.forEachIndexed { index, p ->
+                        item {
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(13.dp), modifier = Modifier.fillMaxWidth()) {
+                                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("#${index + 1}", color = Green, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(p.name, color = Color.White, fontWeight = FontWeight.Bold)
+                                        Text("${p.runs} runs  •  ${p.balls} balls", color = Color.LightGray, fontSize = 11.sp)
+                                    }
+                                    Text("SR ${if (p.balls == 0) "0.00" else String.format(Locale.getDefault(), "%.2f", p.runs * 100.0 / p.balls)}", color = Green, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+                            }
+                        }
                     }
                     item {
-                        Text("TOP BOWLERS", color = Green, fontWeight = FontWeight.Bold)
-                        if (topBowlers.isEmpty()) InfoCard("NO BOWLING RECORDS", "Bowling figures will appear after a match is saved.")
-                        topBowlers.forEachIndexed { index, p -> InfoCard("#${index + 1} ${p.name}", "${p.wickets} wickets • ${p.bowlingRuns} runs • ${p.bowlingBalls / 6}.${p.bowlingBalls % 6} overs") }
+                        Spacer(Modifier.height(8.dp))
+                        Text("🎯  BOWLER RANKINGS", color = Green, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                        Text("Rank  •  Wickets  •  Runs conceded  •  Economy", color = Color.LightGray, fontSize = 11.sp)
+                    }
+                    if (topBowlers.isEmpty()) item { InfoCard("NO BOWLING RECORDS", "Bowling figures save hone par bowlers yahan nazar aayenge.") }
+                    topBowlers.forEachIndexed { index, p ->
+                        item {
+                            Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(13.dp), modifier = Modifier.fillMaxWidth()) {
+                                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text("#${index + 1}", color = Green, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(p.name, color = Color.White, fontWeight = FontWeight.Bold)
+                                        Text("${p.wickets} wickets  •  ${p.bowlingRuns} runs  •  ${p.bowlingBalls / 6}.${p.bowlingBalls % 6} overs", color = Color.LightGray, fontSize = 11.sp)
+                                    }
+                                    Text("ECO ${if (p.bowlingBalls == 0) "—" else String.format(Locale.getDefault(), "%.2f", p.bowlingRuns * 6.0 / p.bowlingBalls)}", color = Green, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                }
+                            }
+                        }
                     }
                 }
                 else -> {
@@ -730,6 +770,84 @@ fun CricketHome() {
             item { Spacer(Modifier.height(12.dp)) }
         }
     }
+}
+
+
+@Composable
+fun MatchScorecardDetails(details: String) {
+    if (details.isBlank()) {
+        InfoCard("SCORECARD NOT AVAILABLE", "Yeh match purane version mein save hua tha; detailed figures available nahi hain.")
+        return
+    }
+    val lines = details.split("\\n")
+    val inningsHeaders = lines.filter { it.startsWith("INNINGS ") }
+    inningsHeaders.forEach { header ->
+        val title = header.substringBefore(":")
+        val summary = header.substringAfter(":").trim()
+        Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                Text(title, color = Green, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                Text(summary, color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                val start = lines.indexOf(header)
+                val end = lines.indexOfFirstFrom(start + 1) { it.startsWith("INNINGS ") }.let { if (it < 0) lines.size else it }
+                val section = lines.subList(start + 1, end)
+                val batterLines = section.dropWhile { it != "BATTERS" }.drop(1).takeWhile { it != "BOWLERS" }
+                val bowlerLines = section.dropWhile { it != "BOWLERS" }.drop(1)
+                if (batterLines.isNotEmpty()) {
+                    HorizontalDivider(color = Color.DarkGray)
+                    Text("BATTING", color = Green, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Batter", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                        Text("R", color = Color.LightGray, fontSize = 10.sp)
+                        Text("B", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.width(35.dp))
+                        Text("SR", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.width(48.dp))
+                    }
+                    batterLines.forEach { line ->
+                        val name = line.substringBefore(":")
+                        val runs = Regex("(\\d+) runs off (\\d+) balls").find(line)
+                        val r = runs?.groupValues?.get(1)?.toIntOrNull() ?: 0
+                        val b = runs?.groupValues?.get(2)?.toIntOrNull() ?: 0
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(name, color = Color.White, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                            Text("$r", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text("$b", color = Color.White, fontSize = 12.sp, modifier = Modifier.width(35.dp))
+                            Text(if (b == 0) "—" else String.format(Locale.getDefault(), "%.1f", r * 100.0 / b), color = Green, fontSize = 12.sp, modifier = Modifier.width(48.dp))
+                        }
+                    }
+                }
+                if (bowlerLines.isNotEmpty()) {
+                    HorizontalDivider(color = Color.DarkGray)
+                    Text("BOWLING", color = Green, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Bowler", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.weight(1f))
+                        Text("O", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.width(35.dp))
+                        Text("R", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.width(30.dp))
+                        Text("W", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.width(25.dp))
+                        Text("ECO", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.width(45.dp))
+                    }
+                    bowlerLines.filter { it.contains(":") }.forEach { line ->
+                        val name = line.substringBefore(":")
+                        val figures = Regex("(\\d+)\\.(\\d+) overs, (\\d+) runs, (\\d+) wickets").find(line)
+                        val balls = (figures?.groupValues?.get(1)?.toIntOrNull() ?: 0) * 6 + (figures?.groupValues?.get(2)?.toIntOrNull() ?: 0)
+                        val conceded = figures?.groupValues?.get(3)?.toIntOrNull() ?: 0
+                        val wkts = figures?.groupValues?.get(4)?.toIntOrNull() ?: 0
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(name, color = Color.White, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                            Text("${balls / 6}.${balls % 6}", color = Color.White, fontSize = 11.sp, modifier = Modifier.width(35.dp))
+                            Text("$conceded", color = Color.White, fontSize = 11.sp, modifier = Modifier.width(30.dp))
+                            Text("$wkts", color = Color.White, fontSize = 11.sp, modifier = Modifier.width(25.dp))
+                            Text(if (balls == 0) "—" else String.format(Locale.getDefault(), "%.2f", conceded * 6.0 / balls), color = Green, fontSize = 11.sp, modifier = Modifier.width(45.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private inline fun <T> List<T>.indexOfFirstFrom(startIndex: Int, predicate: (T) -> Boolean): Int {
+    for (i in startIndex until size) if (predicate(this[i])) return i
+    return -1
 }
 
 @Composable
