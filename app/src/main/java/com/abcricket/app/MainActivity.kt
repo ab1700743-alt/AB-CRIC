@@ -554,7 +554,7 @@ fun CricketHome() {
                             }
                         }
                         item {
-                            OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; fours = 0; sixes = 0; wides = 0; noBalls = 0; byes = 0; legByes = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; firstStrikerName = ""; firstStrikerRuns = 0; firstStrikerBalls = 0; firstNonStrikerName = ""; firstNonStrikerRuns = 0; firstNonStrikerBalls = 0; firstBowlerName = ""; firstBowlerRuns = 0; firstBowlerWickets = 0; firstBowlerBalls = 0; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
+                            OutlinedButton(onClick = { runs = 0; wickets = 0; balls = 0; extras = 0; fours = 0; sixes = 0; wides = 0; noBalls = 0; byes = 0; legByes = 0; firstInningsExtras = 0; firstInningsFours = 0; firstInningsSixes = 0; firstInningsWides = 0; firstInningsNoBalls = 0; firstInningsByes = 0; firstInningsLegByes = 0; innings = 1; firstInningsRuns = 0; firstInningsWickets = 0; firstInningsOvers = "0.0"; firstInningsTeam = ""; firstStrikerName = ""; firstStrikerRuns = 0; firstStrikerBalls = 0; firstNonStrikerName = ""; firstNonStrikerRuns = 0; firstNonStrikerBalls = 0; firstBowlerName = ""; firstBowlerRuns = 0; firstBowlerWickets = 0; firstBowlerBalls = 0; target = 0; strikerRuns = 0; strikerBalls = 0; nonStrikerRuns = 0; nonStrikerBalls = 0; bowlerRuns = 0; bowlerWickets = 0; bowlerBalls = 0; started = false }, modifier = Modifier.fillMaxWidth()) { Text("RESET INNINGS") }
                         }
                     }
                     item {
@@ -864,16 +864,16 @@ fun MatchScorecardDetails(details: String) {
         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF101C16)), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(title + "  •  INNINGS SCORECARD", color = Green, fontWeight = FontWeight.Black, fontSize = 13.sp)
-                Text(summary, color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black)
-                boundariesLine?.let { Text(it, color = Green, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
-                extrasLine?.let { Text(it, color = Color.LightGray, fontSize = 12.sp) }
                 val start = lines.indexOf(header)
                 val end = lines.indexOfFirstFrom(start + 1) { it.startsWith("INNINGS ") }.let { if (it < 0) lines.size else it }
                 val section = lines.subList(start + 1, end)
-                val batterLines = section.dropWhile { it != "BATTERS" }.drop(1).takeWhile { it != "BOWLERS" }
-                val bowlerLines = section.dropWhile { it != "BOWLERS" }.drop(1).filter { Regex("(\\d+)\\.(\\d+) overs, (\\d+) runs, (\\d+) wickets").containsMatchIn(it) }
                 val boundariesLine = section.firstOrNull { it.startsWith("BOUNDARIES:") }
                 val extrasLine = section.firstOrNull { it.startsWith("EXTRAS:") }
+                Text(summary, color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black)
+                boundariesLine?.let { Text(it, color = Green, fontSize = 12.sp, fontWeight = FontWeight.Bold) }
+                extrasLine?.let { Text(it, color = Color.LightGray, fontSize = 12.sp) }
+                val batterLines = section.dropWhile { it != "BATTERS" }.drop(1).takeWhile { it != "BOWLERS" }
+                val bowlerLines = section.dropWhile { it != "BOWLERS" }.drop(1).filter { Regex("(\\d+)\\.(\\d+) overs, (\\d+) runs, (\\d+) wickets").containsMatchIn(it) }
                 if (batterLines.isNotEmpty()) {
                     HorizontalDivider(color = Color(0xFF34483B))
                     Text("BATTING", color = Green, fontWeight = FontWeight.Black, fontSize = 14.sp)
