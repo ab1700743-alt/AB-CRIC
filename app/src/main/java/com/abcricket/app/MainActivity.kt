@@ -776,7 +776,7 @@ fun CricketHome() {
 @Composable
 fun MatchScorecardDetails(details: String) {
     if (details.isBlank()) {
-        InfoCard("SCORECARD NOT AVAILABLE", "Yeh match purane version mein save hua tha; detailed figures available nahi hain.")
+        InfoCard("DETAILED SCORECARD UNAVAILABLE", "Is saved match mein detailed player figures record nahi hue thay.")
         return
     }
     val lines = details.split("\\n")
@@ -784,18 +784,18 @@ fun MatchScorecardDetails(details: String) {
     inningsHeaders.forEach { header ->
         val title = header.substringBefore(":")
         val summary = header.substringAfter(":").trim()
-        Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                Text(title, color = Green, fontWeight = FontWeight.Black, fontSize = 16.sp)
-                Text(summary, color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+        Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF101C16)), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(title + "  •  OFFICIAL-STYLE SCORECARD", color = Green, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                Text(summary, color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Black)
                 val start = lines.indexOf(header)
                 val end = lines.indexOfFirstFrom(start + 1) { it.startsWith("INNINGS ") }.let { if (it < 0) lines.size else it }
                 val section = lines.subList(start + 1, end)
                 val batterLines = section.dropWhile { it != "BATTERS" }.drop(1).takeWhile { it != "BOWLERS" }
                 val bowlerLines = section.dropWhile { it != "BOWLERS" }.drop(1)
                 if (batterLines.isNotEmpty()) {
-                    HorizontalDivider(color = Color.DarkGray)
-                    Text("BATTING", color = Green, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    HorizontalDivider(color = Color(0xFF34483B))
+                    Text("BATTING", color = Green, fontWeight = FontWeight.Black, fontSize = 14.sp)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Batter", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.weight(1f))
                         Text("R", color = Color.LightGray, fontSize = 10.sp)
@@ -817,7 +817,7 @@ fun MatchScorecardDetails(details: String) {
                 }
                 if (bowlerLines.isNotEmpty()) {
                     HorizontalDivider(color = Color.DarkGray)
-                    Text("BOWLING", color = Green, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("BOWLING", color = Green, fontWeight = FontWeight.Black, fontSize = 14.sp)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Bowler", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.weight(1f))
                         Text("O", color = Color.LightGray, fontSize = 10.sp, modifier = Modifier.width(35.dp))
