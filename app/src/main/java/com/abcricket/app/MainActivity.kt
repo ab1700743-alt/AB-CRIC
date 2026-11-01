@@ -373,7 +373,6 @@ fun CricketHome() {
                                 }
                             }
                         }
-                        }
                     }
                     item {
                         Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
