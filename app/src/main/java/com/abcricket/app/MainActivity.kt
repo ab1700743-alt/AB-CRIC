@@ -28,9 +28,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private val Green = Color(0xFF19B56B)
-private val Dark = Color(0xFF08110D)
-private val Panel = Color(0xFF14221B)
+private val Green = Color(0xFFFF8A00)
+private val Dark = Color(0xFF050505)
+private val Panel = Color(0xFF171717)
 
 private data class MatchRecord(val date: String, val team: String, val opponent: String, val score: String, val overs: String, val toss: String, val details: String = "")
 data class PlayerCareer(val name: String, val role: String, val matches: Int = 0, val runs: Int = 0, val balls: Int = 0, val wickets: Int = 0, val bowlingRuns: Int = 0, val bowlingBalls: Int = 0)
@@ -152,6 +152,9 @@ fun CricketHome() {
     var nonStrikerName by remember { mutableStateOf("") }
     var bowlerName by remember { mutableStateOf("") }
     var awaitingNextBatter by remember { mutableStateOf(false) }
+    var showDismissalDialog by remember { mutableStateOf(false) }
+    var selectedDismissal by remember { mutableStateOf("Bowled") }
+    var lastDismissal by remember { mutableStateOf("") }
     var strikerRuns by remember { mutableIntStateOf(0) }
     var strikerBalls by remember { mutableIntStateOf(0) }
     var nonStrikerRuns by remember { mutableIntStateOf(0) }
@@ -236,6 +239,34 @@ fun CricketHome() {
             .putInt("bowlerRuns", bowlerRuns).putInt("bowlerWickets", bowlerWickets).putInt("bowlerBalls", bowlerBalls).apply()
     }
 
+        if (showDismissalDialog) {
+            AlertDialog(
+                onDismissRequest = { showDismissalDialog = false },
+                containerColor = Panel,
+                title = { Text("SELECT DISMISSAL", color = Color.White, fontWeight = FontWeight.Black) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        listOf("Bowled", "Caught", "LBW", "Run out", "Stumped", "Hit wicket", "Retired hurt", "Obstructing the field", "Other").forEach { method ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(selected = selectedDismissal == method, onClick = { selectedDismissal = method }, colors = RadioButtonDefaults.colors(selectedColor = Green))
+                                Text(method, color = Color.White)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        wickets++; balls++; bowlerBalls++; strikerBalls++
+                        if (selectedDismissal in listOf("Bowled", "Caught", "LBW", "Stumped", "Hit wicket")) bowlerWickets++
+                        lastDismissal = "$strikerName — $selectedDismissal"
+                        awaitingNextBatter = wickets < 10 && liveBattingPlayers.any { it.first != strikerName && it.first != nonStrikerName }
+                        if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old }
+                        showDismissalDialog = false
+                    }) { Text("CONFIRM WICKET", color = Green) }
+                },
+                dismissButton = { TextButton(onClick = { showDismissalDialog = false }) { Text("CANCEL", color = Color.LightGray) } }
+            )
+        }
     Scaffold(
         containerColor = Dark,
         bottomBar = {
@@ -381,7 +412,7 @@ fun CricketHome() {
                                         Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { runs++; extras++; balls++; bowlerBalls++ } }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(2.dp), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("LEG-BYE", color = Green, fontSize = 10.sp) }
                                     }
                                     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { wickets++; balls++; bowlerBalls++; bowlerWickets++; strikerBalls++; awaitingNextBatter = wickets < 10 && players.any { it.first != strikerName && it.first != nonStrikerName }; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old } } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E3030))) { Text("WICKET") }
+                                        Button(onClick = { if (!awaitingNextBatter && wickets < 10 && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && (innings == 1 || runs < target)) { selectedDismissal = "Bowled"; showDismissalDialog = true } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3261E))) { Text("WICKET") }
                                         Button(onClick = { if (!awaitingNextBatter && balls < (oversLimit.toIntOrNull() ?: 20) * 6 && wickets < 10 && (innings == 1 || runs < target)) { balls++; bowlerBalls++; strikerBalls++; if (balls % 6 == 0) { val old = strikerName; strikerName = nonStrikerName; nonStrikerName = old } } }, modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors(containerColor = Panel)) { Text("DOT BALL", color = Color.White) }
                                     }
                                     if (awaitingNextBatter && wickets < 10) {
@@ -404,12 +435,13 @@ fun CricketHome() {
                             }
                         }
                     }
-                    item { ScoreCard(team, runs, wickets, overs, started) }
+                    
                     item {
                         Card(colors = CardDefaults.cardColors(containerColor = Panel), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text("LIVE PLAYER FIGURES", color = Green, fontWeight = FontWeight.Bold)
-                                Text("Extras: $extras", color = Color.LightGray, fontSize = 12.sp)
+                                Text("EXTRAS  $extras", color = Color.LightGray, fontSize = 12.sp)
+                                if (lastDismissal.isNotBlank()) Text("LAST WICKET  $lastDismissal", color = Green, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 Text((strikerName.ifBlank { "Striker" }) + " (on strike): $strikerRuns runs off $strikerBalls balls", color = Color.White, fontSize = 13.sp)
                                 Text((nonStrikerName.ifBlank { "Non-striker" }) + ": $nonStrikerRuns runs off $nonStrikerBalls balls", color = Color.White, fontSize = 13.sp)
                                 Text((bowlerName.ifBlank { "Bowler" }) + ": ${bowlerBalls / 6}.${bowlerBalls % 6} overs, $bowlerRuns runs, $bowlerWickets wickets", color = Color.White, fontSize = 13.sp)
@@ -786,8 +818,8 @@ fun MatchScorecardDetails(details: String) {
         val summary = header.substringAfter(":").trim()
         Card(colors = CardDefaults.cardColors(containerColor = Color(0xFF101C16)), shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(title + "  •  OFFICIAL-STYLE SCORECARD", color = Green, fontWeight = FontWeight.Black, fontSize = 13.sp)
-                Text(summary, color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Black)
+                Text(title + "  •  INNINGS SCORECARD", color = Green, fontWeight = FontWeight.Black, fontSize = 13.sp)
+                Text(summary, color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.Black)
                 val start = lines.indexOf(header)
                 val end = lines.indexOfFirstFrom(start + 1) { it.startsWith("INNINGS ") }.let { if (it < 0) lines.size else it }
                 val section = lines.subList(start + 1, end)
