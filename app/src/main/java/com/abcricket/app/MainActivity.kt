@@ -123,6 +123,7 @@ fun CricketHome() {
     var balls by remember { mutableIntStateOf(0) }
     var extras by remember { mutableIntStateOf(0) }
     var innings by remember { mutableIntStateOf(1) }
+    var opponentBattingFirst by remember { mutableStateOf(false) }
     var firstInningsRuns by remember { mutableIntStateOf(0) }
     var firstInningsWickets by remember { mutableIntStateOf(0) }
     var firstInningsOvers by remember { mutableStateOf("0.0") }
@@ -220,6 +221,10 @@ fun CricketHome() {
             .putInt("runs", runs).putInt("wickets", wickets).putInt("balls", balls).putInt("extras", extras).putInt("innings", innings).putInt("firstInningsRuns", firstInningsRuns).putInt("firstInningsWickets", firstInningsWickets).putString("firstInningsOvers", firstInningsOvers).putString("firstInningsTeam", firstInningsTeam).putInt("target", target).apply()
     }
     val overs = "${balls / 6}.${balls % 6}"
+    val opponentRoster = opponentPlayerNames.filter { it.isNotBlank() }.map { it to "Opponent" }
+    val setupOpponentBatting = (tossWinner == team && tossDecision == "Bowl") || (tossWinner == opponentTeam && tossDecision == "Bat")
+    val liveBattingPlayers = if ((innings == 1 && opponentBattingFirst) || (innings == 2 && !opponentBattingFirst)) opponentRoster else players
+    val liveBowlingPlayers = if ((innings == 1 && opponentBattingFirst) || (innings == 2 && !opponentBattingFirst)) players else opponentRoster
     LaunchedEffect(matchSaved) { preferences.edit().putBoolean("matchSaved", matchSaved).apply() }
     LaunchedEffect(strikerRuns, strikerBalls, nonStrikerRuns, nonStrikerBalls, bowlerRuns, bowlerWickets, bowlerBalls) {
         preferences.edit().putInt("strikerRuns", strikerRuns).putInt("strikerBalls", strikerBalls)
@@ -306,9 +311,9 @@ fun CricketHome() {
                         }
                         HorizontalDivider(color = Color.DarkGray)
                         Text("PLAYING XI DETAILS", color = Green, fontWeight = FontWeight.Bold)
-                        PlayerPicker("Striker", strikerName, players, !started) { strikerName = it }
-                        PlayerPicker("Non-striker", nonStrikerName, players, !started) { nonStrikerName = it }
-                        PlayerPicker("Opening bowler", bowlerName, players, !started) { bowlerName = it }
+                        PlayerPicker("Striker", strikerName, if (setupOpponentBatting) opponentRoster else players, !started) { strikerName = it }
+                        PlayerPicker("Non-striker", nonStrikerName, if (setupOpponentBatting) opponentRoster else players, !started) { nonStrikerName = it }
+                        PlayerPicker("Opening bowler", bowlerName, if (setupOpponentBatting) players else opponentRoster, !started) { bowlerName = it }
                         Text("Toss: " + tossWinner + " elected to " + tossDecision + " | " + (oversLimit.ifBlank { "20" }) + " overs", color = Color.LightGray, fontSize = 12.sp)
                         Button(onClick = {
                             val configuredOvers = oversLimit.toIntOrNull() ?: 0
@@ -317,6 +322,7 @@ fun CricketHome() {
                             if (validTeams && configuredOvers in 1..100 && validBatters) {
                                 if (innings == 1) {
                                     val firstBattingTeam = if ((tossWinner == team && tossDecision == "Bat") || (tossWinner == opponentTeam && tossDecision == "Bowl")) team else opponentTeam
+                                    opponentBattingFirst = firstBattingTeam != team
                                     if (firstBattingTeam != team) { val oldTeam = team; team = opponentTeam; opponentTeam = oldTeam }
                                 }
                                 started = true
@@ -338,16 +344,16 @@ fun CricketHome() {
                                     Text("BATTING NOW", color = Color.LightGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                         Column(Modifier.weight(1f)) {
-                                            PlayerPicker("STRIKER", strikerName, players, true) { strikerName = it }
+                                            PlayerPicker("STRIKER", strikerName, liveBattingPlayers, true) { strikerName = it }
                                             Text("$strikerRuns runs • $strikerBalls balls", color = Green, fontSize = 11.sp)
                                         }
                                         Column(Modifier.weight(1f)) {
-                                            PlayerPicker("NON-STRIKER", nonStrikerName, players, true) { nonStrikerName = it }
+                                            PlayerPicker("NON-STRIKER", nonStrikerName, liveBattingPlayers, true) { nonStrikerName = it }
                                             Text("$nonStrikerRuns runs • $nonStrikerBalls balls", color = Color.LightGray, fontSize = 11.sp)
                                         }
                                     }
                                     Text("CURRENT BOWLER", color = Color.LightGray, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                    PlayerPicker("BOWLER", bowlerName, players, true) { bowlerName = it }
+                                    PlayerPicker("BOWLER", bowlerName, liveBowlingPlayers, true) { bowlerName = it }
                                     Text("${bowlerBalls / 6}.${bowlerBalls % 6} overs • $bowlerRuns runs • $bowlerWickets wickets", color = Green, fontSize = 11.sp)
                                     HorizontalDivider(color = Color.DarkGray)
                                     Text("QUICK SCORING", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
@@ -368,7 +374,7 @@ fun CricketHome() {
                                     }
                                     if (awaitingNextBatter && wickets < 10) {
                                         Text("WICKET FALLEN — SELECT NEXT BATTER", color = Green, fontWeight = FontWeight.Bold, fontSize = 11.sp)
-                                        PlayerPicker("NEXT BATTER", "", players.filter { it.first != strikerName && it.first != nonStrikerName }, true) { next -> strikerName = next; strikerRuns = 0; strikerBalls = 0; awaitingNextBatter = false }
+                                        PlayerPicker("NEXT BATTER", "", liveBattingPlayers.filter { it.first != strikerName && it.first != nonStrikerName }, true) { next -> strikerName = next; strikerRuns = 0; strikerBalls = 0; awaitingNextBatter = false }
                                     }
                                 }
                             }
@@ -456,7 +462,7 @@ fun CricketHome() {
                                 Card(colors = CardDefaults.cardColors(containerColor = Panel), modifier = Modifier.fillMaxWidth()) {
                                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Text("WICKET FALLEN — SELECT NEXT BATTER", color = Green, fontWeight = FontWeight.Bold)
-                                        PlayerPicker("Next batter", "", players.filter { it.first != strikerName && it.first != nonStrikerName }, true) { next -> strikerName = next; strikerRuns = 0; strikerBalls = 0; awaitingNextBatter = false }
+                                        PlayerPicker("Next batter", "", liveBattingPlayers.filter { it.first != strikerName && it.first != nonStrikerName }, true) { next -> strikerName = next; strikerRuns = 0; strikerBalls = 0; awaitingNextBatter = false }
                                     }
                                 }
                             }
